@@ -7,11 +7,11 @@
 
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.trace3.spark</groupId>
-  <artifactId>HiveTableSwapper</artifactId>
+  <artifactId>spark-hive-tools</artifactId>
   <version>0.1.2</version>
   <packaging>jar</packaging>
-  <description>HiveTableSwapper via Spark</description>
-  <name>HiveTableSwapper</name>
+  <description>HiveTableSwapper and other hive tools via Spark</description>
+  <name>SparkHiveTools</name>
   <organization>
   	<name>trace3.com</name>
   </organization>
@@ -28,9 +28,9 @@
       <hadoop.version>2.7.1</hadoop.version>
       <hbase.version>1.1.1</hbase.version>
       <hive.version>1.2.1</hive.version>
-      <scala.version>2.10.6</scala.version>
-      <scala.tools.version>2.10</scala.tools.version>
-      <spark.version>2.0.1</spark.version>
+      <scala.version>2.11.8</scala.version>
+      <scala.tools.version>2.11</scala.tools.version>
+      <spark.version>2.1.0</spark.version>
   </properties>
 
   <dependencies>

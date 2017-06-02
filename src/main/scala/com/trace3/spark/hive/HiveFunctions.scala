@@ -29,14 +29,39 @@ object HiveFunctions {
     }
   }
 
+  /**  Given the full Hive SHOW CREATE TABLE string, extract the
+    *  table location. Useful for determining the HDFS location of
+    *  an external table.
+    * @param createStr  The Hive CREATE TABLE string
+    * @return The LOCATION target string
+    */
+  def GetTableLocation ( createStr : String ) : String = {
+    val pat1 = """(CREATE .*)( TBLPROPERTIES .*)""".r
+    val pat2 = """(CREATE .*TABLE.* )LOCATION\s+'(.+').*""".r
 
-  /**  Convenience function to create a new location string from
-    *  an existing table in the same destination for a new table.
-    *  eg. Given a location of 
+    var (tbl, prop) = createStr match {
+      case pat1(m1, m2) => (m1, m2)
+    }
+
+    // extract and rename location
+    if ( tbl.contains("LOCATION") ) {
+      val (ctbl, loc) = tbl match {
+        case pat2(m1, m2) => (m1, m2)
+      }
+      loc
+    } else {
+      s""
+    }
+  }
+
+
+  /**  Convenience function to rename a hive table location to a
+    *  a new table name in the same database.
+    *  eg. Given a location of
     *  'maprfs:////user/tca/hive/warehouse/default/table1'
     *  and a table name of 'table2' the new location will be
     *  'maprfs:////user/tca/hive/warehouse/default/table2'
-    *  NOTE: that his only adjusts the final directory. 
+    *  NOTE: that his only adjusts the last|final directory.
     *
     * @param loc       The current location string.
     * @param tableName The name of the new table.

@@ -3,7 +3,6 @@
 #  Spark submit script for the HiveTableSwapper
 #
 
-
 SRC_TABLE="$1"
 DST_TABLE="$2"
 NUM_PARTS="$3"
