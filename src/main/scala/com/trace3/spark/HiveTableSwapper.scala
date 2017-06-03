@@ -26,13 +26,13 @@ object HiveTableSwapper {
   val tableSuffix = "_tmphts"
 
 
-  def usage() =
+  val usage : String =
     """
-      ==>  Usage: HiveTableSwapper <srctable> <dstTable> [num_partitions] [partition_by]
-      ==>      srctable       =  Source Hive Table to Alter
-      ==>      dsttable       =  Name of the new table (Note any existing table is DROPPED!)
-      ==>      num_partitions =  Optional number of partitions for the new table.
-      ==>      partition_by   =  Optional name of the column to repartition by.
+      |==>  Usage: HiveTableSwapper <srctable> <dstTable> [num_partitions] [partition_by]
+      |==>      srctable       =  Source Hive Table to Alter
+      |==>      dsttable       =  Name of the new table (Note any existing table is DROPPED!)
+      |==>      num_partitions =  Optional number of partitions for the new table.
+      |==>      partition_by   =  Optional name of the column to repartition by.
     """.stripMargin
 
 
