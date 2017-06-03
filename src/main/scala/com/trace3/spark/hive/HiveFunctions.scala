@@ -36,17 +36,12 @@ object HiveFunctions {
     * @return The LOCATION target string
     */
   def GetTableLocation ( createStr : String ) : String = {
-    val pat1 = """(CREATE .*)( TBLPROPERTIES .*)""".r
-    val pat2 = """(CREATE .*TABLE.* )LOCATION\s+'(.+').*""".r
-
-    var (tbl, prop) = createStr match {
-      case pat1(m1, m2) => (m1, m2)
-    }
+    val pat = """(CREATE .*TABLE.* )LOCATION\s+'(.+').*""".r
 
     // extract and rename location
-    if ( tbl.contains("LOCATION") ) {
-      val (ctbl, loc) = tbl match {
-        case pat2(m1, m2) => (m1, m2)
+    if ( createStr.contains("LOCATION") ) {
+      val (ctbl, loc) = createStr match {
+        case pat(m1, m2) => (m1, m2)
       }
       loc
     } else {

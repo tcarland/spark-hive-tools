@@ -49,32 +49,48 @@ object ParquetValidate {
     spark.sqlContext.setConf("hive.exec.dynamic.partition",  "true")
     spark.sqlContext.setConf("hive.exec.dynamic.partition.mode",  "nonstrict")
 
-    val crstr    = spark.sql("SHOW CREATE TABLE " + table).first.get(0).toString
-    val pathstr  = HiveFunctions.GetTableLocation(crstr)
     val conf     = new Configuration()
-    val path     = new Path(pathstr)
     val fs       = FileSystem.get(conf)
+    var pathstr  = ""
+
+    if ( table.contains("/") ) {
+      pathstr = table
+    } else {
+      val crstr  = spark.sql("SHOW CREATE TABLE " + table).first.get(0).toString
+      pathstr    = HiveFunctions.GetTableLocation(crstr)
+
+      if ( pathstr.isEmpty ) {
+        pathstr = spark.conf.getOption("hive.metastore.warehouse.dir").getOrElse("/user/hive/warehouse")
+        println(" ==> Hive Warehouse Dir = " + pathstr)
+
+        if ( table.contains(".") )
+          pathstr += "/" + HiveFunctions.GetDBName(table).get + ".db" +
+              "/" + HiveFunctions.GetTableName(table)
+        else
+          pathstr += table
+      }
+    }
+    println("  ==> Using Dir " + pathstr)
+
+    val path     = new Path(pathstr)
     val cols     = spark.read.parquet(path.toString).columns.map(s => s.toUpperCase)
     val files    = fs.listStatus(path).map(_.getPath.toUri).filter(!_.toString.contains("_SUCCESS"))
 
-    println("Table Location: " + pathstr)
     println("Table Columns:")
     cols.foreach(s => println("  " + s))
 
     files.foreach {
       uri => {
-        println("foreach uri: " + uri.toString)
-        val colp = spark.read.parquet(uri.toString).columns.map(s => s.toUpperCase)
+        val colp : Array[String] = spark.read.parquet(uri.toString).columns.map(s => s.toUpperCase)
 
-        //println("Partition: " + uri.toString)
-        colp.foreach(s => println("  " + s))
+        println(" ==> Partition: " + uri.toString)
+        //println("Columns:")
+        //colp.foreach(s => println("  " + s))
+        println("    Columns missing from partition:")
 
-        println("Columns in MAIN missing in Partition:")
         cols.diff(colp).foreach(println(_))
       }
     }
-
-
 
     spark.stop
   }
