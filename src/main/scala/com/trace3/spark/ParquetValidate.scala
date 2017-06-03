@@ -75,7 +75,14 @@ object ParquetValidate {
     val path     = new Path(pathstr)
     val cols     = spark.read.parquet(path.toString).columns.map(s => s.toUpperCase)
     val files    = fs.listStatus(path).map(_.getPath).filter(!_.getName.toString.contains("_SUCCESS"))
+    val pkey     = files(0).getName()
+    val keypat   = """(.*)=.*""".r
+    val keycol   = pkey match {
+      case keypat(m1) => m1
+    }
 
+    println("Number of Partition Directories: " + files.size.toString)
+    println("Partition Key: " + keycol)
     println("Table Columns:")
     cols.foreach(s => println("  " + s))
     println("Partitions  < missing columns >")
@@ -86,10 +93,11 @@ object ParquetValidate {
         val colp = spark.read.parquet(path.toUri.toString).columns.map(s => s.toUpperCase)
 
         print(" ==>  " + path.getName + " < ")
-        //println("Columns:")
-        //colp.foreach(s => println("  " + s))
 
-        cols.diff(colp).foreach(s => print(s + ", "))
+        cols.diff(colp).foreach(s => {
+          if ( ! s.equalsIgnoreCase(keycol) )
+            print(s + ", ")
+        })
         println(" >")
       }
     }
