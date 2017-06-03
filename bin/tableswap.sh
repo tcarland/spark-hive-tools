@@ -8,7 +8,7 @@ DST_TABLE="$2"
 NUM_PARTS="$3"
 SPLIT_COL="$4"
 
-APP_JAR="target/HiveTableSwapper-0.1.2-jar-with-dependencies.jar"
+APP_JAR="target/spark-hive-tools-0.1.4-jar-with-dependencies.jar"
 APP_CLASS="com.trace3.spark.HiveTableSwapper"
 
 if [ -z "$SRC_TABLE" ] || [ -z "$DST_TABLE" ]; then

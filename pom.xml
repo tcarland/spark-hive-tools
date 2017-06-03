@@ -8,10 +8,10 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.trace3.spark</groupId>
   <artifactId>spark-hive-tools</artifactId>
-  <version>0.1.2</version>
+  <version>0.1.4</version>
   <packaging>jar</packaging>
   <description>HiveTableSwapper and other hive tools via Spark</description>
-  <name>SparkHiveTools</name>
+  <name>spark-hive-tools</name>
   <organization>
   	<name>trace3.com</name>
   </organization>
