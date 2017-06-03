@@ -1,9 +1,22 @@
+/** @file HiveFunctions.scala
+  *
+  * @author Timothy C. Arland <tcarland@gmail.com>
+  *
+  */
 package com.trace3.spark.hive
 
 import org.apache.spark.sql.SparkSession
 import scala.util.matching.Regex
 
 
+// note: some of these are a little ugly and special case
+// early impl needs continued and improved abstraction
+
+/** HiveFunctions
+  *
+  * A collection of functions for interacting with Hive and underlying Parquet tables.
+  *
+ **/
 object HiveFunctions {
 
 
@@ -46,15 +59,18 @@ object HiveFunctions {
     if ( table.contains("/") ) {
       path = table
     } else {
-      val crstr  = spark.sql("SHOW CREATE TABLE " + table).first.get(0).toString
-      path    = HiveFunctions.GetTableLocationString(crstr)
+      val crstr = spark.sql("SHOW CREATE TABLE " + table)
+        .first
+        .get(0)
+        .toString
+
+      path = HiveFunctions.GetTableLocationString(crstr)
 
       if ( path.isEmpty ) {
         path = spark.conf.getOption("hive.metastore.warehouse.dir").getOrElse("/user/hive/warehouse")
 
         if ( table.contains(".") )
-          path += "/" + HiveFunctions.GetDBName(table).get + ".db" +
-              "/" + HiveFunctions.GetTableName(table)
+          path += "/" + HiveFunctions.GetDBName(table).get + ".db" + "/" + HiveFunctions.GetTableName(table)
         else
           path += table
       }

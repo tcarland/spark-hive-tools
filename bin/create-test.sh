@@ -5,7 +5,7 @@
 
 SRC_TABLE="$1"
 
-APP_JAR="target/spark-hive-tools-0.1.3-jar-with-dependencies.jar"
+APP_JAR="target/spark-hive-tools-0.1.4-jar-with-dependencies.jar"
 APP_CLASS="com.trace3.spark.HiveTableCheck"
 
 

@@ -42,15 +42,13 @@ object ParquetValidate {
       .appName("ParquetValidate")
       .enableHiveSupport()
       .getOrCreate
-    import spark.implicits._
 
     spark.sqlContext.setConf("spark.sql.hive.convertMetastoreParquet", "false")
     spark.sqlContext.setConf("spark.sql.parquet.compression.codec", "snappy")
     spark.sqlContext.setConf("hive.exec.dynamic.partition",  "true")
     spark.sqlContext.setConf("hive.exec.dynamic.partition.mode",  "nonstrict")
 
-    val conf     = new Configuration()
-    val fs       = FileSystem.get(conf)
+    val fs       = FileSystem.get(spark.sparkContext.hadoopConfiguration)
     var pathstr  = HiveFunctions.GetTableURI(spark, table)
 
     if ( pathstr.isEmpty ) {
@@ -62,7 +60,7 @@ object ParquetValidate {
     val files    = fs.listStatus(path).map(_.getPath).filter(!_.getName.startsWith("_"))
     val pkey     = files(0).getName()
     val keypat   = """(.*)=.*""".r
-    val keycol   = pkey match {   //TODO: can throw a match error?
+    val keycol   = pkey match {   //TODO: throws a match error
       case keypat(m1) => m1
     }
 
@@ -74,9 +72,9 @@ object ParquetValidate {
     println(" > Using path: " + pathstr)
     println(" > Number of Partition Directories: " + files.size.toString)
     println(" > Partition Key: " + keycol)
-    println(" > Table Columns: < ")
+    print(" > Table Columns: < ")
     cols.foreach(s => print(s + ", "))
-    println("> \n Partitions  <missing columns>")
+    println(">\n > Partitions  <missing columns>")
 
     // Iterate on the Parquet Partitions and compare columns.
     files.foreach( path => {
@@ -84,7 +82,7 @@ object ParquetValidate {
         .parquet(path.toUri.toString)
         .columns.map(s => s.toUpperCase)
 
-      print(" ==>  " + path.getName + " < ")
+      print("    " + path.getName + " < ")
 
       // diff columns ignoring the partition key
       cols.diff(colp).foreach(s => {
@@ -95,7 +93,7 @@ object ParquetValidate {
       println(" >")
     })
 
-    println("finished.")
+    println("> Finished.")
     spark.stop
   }
 }
