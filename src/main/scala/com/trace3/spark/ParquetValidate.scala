@@ -27,6 +27,27 @@ object ParquetValidate {
       |==>      table       = Parquet table name to validate
     """.stripMargin
 
+  def getPathString ( spark: SparkSession, table : String ) : String = {
+    var pathstr = ""
+
+    if ( table.contains("/") ) {
+      pathstr = table
+    } else {
+      val crstr  = spark.sql("SHOW CREATE TABLE " + table).first.get(0).toString
+      pathstr    = HiveFunctions.GetTableLocation(crstr)
+
+      if ( pathstr.isEmpty ) {
+        pathstr = spark.conf.getOption("hive.metastore.warehouse.dir").getOrElse("/user/hive/warehouse")
+
+        if ( table.contains(".") )
+          pathstr += "/" + HiveFunctions.GetDBName(table).get + ".db" +
+              "/" + HiveFunctions.GetTableName(table)
+        else
+          pathstr += table
+      }
+    }
+    pathstr
+  }
 
 
   def main ( args: Array[String] ) : Unit = {
@@ -51,45 +72,31 @@ object ParquetValidate {
 
     val conf     = new Configuration()
     val fs       = FileSystem.get(conf)
-    var pathstr  = ""
+    var pathstr  = getPathString(spark, table)
 
-    if ( table.contains("/") ) {
-      pathstr = table
-    } else {
-      val crstr  = spark.sql("SHOW CREATE TABLE " + table).first.get(0).toString
-      pathstr    = HiveFunctions.GetTableLocation(crstr)
-
-      if ( pathstr.isEmpty ) {
-        pathstr = spark.conf.getOption("hive.metastore.warehouse.dir").getOrElse("/user/hive/warehouse")
-        println(" ==> Hive Warehouse Dir = " + pathstr)
-
-        if ( table.contains(".") )
-          pathstr += "/" + HiveFunctions.GetDBName(table).get + ".db" +
-              "/" + HiveFunctions.GetTableName(table)
-        else
-          pathstr += table
-      }
+    if ( pathstr.isEmpty ) {
+      System.err.println("Unable to determine path to parquet table")
+      System.exit(1)
     }
-    println("  ==> Using Dir " + pathstr)
 
     val path     = new Path(pathstr)
     val cols     = spark.read.parquet(path.toString).columns.map(s => s.toUpperCase)
-    val files    = fs.listStatus(path).map(_.getPath).filter(!_.getName.toString.contains("_SUCCESS"))
+    val files    = fs.listStatus(path).map(_.getPath).filter(!_.getName.startsWith("_"))
     val pkey     = files(0).getName()
     val keypat   = """(.*)=.*""".r
-    val keycol   = pkey match {
+    val keycol   = pkey match {   //TODO: can throw a match error?
       case keypat(m1) => m1
     }
 
-    println("Number of Partition Directories: " + files.size.toString)
-    println("Partition Key: " + keycol)
-    println("Table Columns:")
+    println(" > Using path: " + pathstr)
+    println(" > Number of Partition Directories: " + files.size.toString)
+    println(" > Partition Key: " + keycol)
+    println(" > Table Columns:")
     cols.foreach(s => println("  " + s))
-    println("Partitions  < missing columns >")
+    println("Partitions  <missing columns>")
 
     files.foreach {
       path => {
-        // : Array[String]
         val colp = spark.read.parquet(path.toUri.toString).columns.map(s => s.toUpperCase)
 
         print(" ==>  " + path.getName + " < ")
@@ -98,10 +105,12 @@ object ParquetValidate {
           if ( ! s.equalsIgnoreCase(keycol) )
             print(s + ", ")
         })
+
         println(" >")
       }
     }
 
+    println("finished.")
     spark.stop
   }
 }
