@@ -12,7 +12,10 @@ import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.FileSystem
 import org.apache.hadoop.fs.Path
 
-/**
+/** ParquetValidate
+  *
+  * Compares partition schemas and reports on which partitions
+  * are missing which columns.
   * Created by tcarland@gmail.com on 11/17/16
   */
 object ParquetValidate {
