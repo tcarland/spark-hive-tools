@@ -2,12 +2,16 @@ spark-hive-tools
 ================
 
 
-#### Overview
+##### Overview
 
   Provides convenient Scala functions for interacting or performing common operations on Hive tables.
 
 
  * HiveTableSwapper
+ * ParquetValidate
+ * DBColumnCompare
+
+##### HiveTableSwapper
 
 A tool intended for the post-injestion process of moving a new table into place of an existing 
 table; optionally allowing for a table repartition in the process.
@@ -67,11 +71,14 @@ return $r
  * Repartitioner 
 --> 
 
- * ParquetValidate
+##### ParquetValidate
  
  Iterates on a Parquet Table's Partitions and reports on missing columns (usually as a result of 
  schema evolution).
 
+##### DBColumnCompare
+
+Compares the columns of an external database table (via JDBC) to a given Hive Table.
 
 
 
