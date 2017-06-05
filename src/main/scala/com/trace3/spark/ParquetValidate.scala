@@ -20,7 +20,6 @@ import org.apache.hadoop.fs.Path
   */
 object ParquetValidate {
 
-
   val usage : String =
     """
       |==>  Usage: ParquetValidate <table>
