@@ -29,14 +29,14 @@ results in tables being unusable from Hive or Impala. Notably, any use of .saveA
 APPEND mode will rewrite the metadata. To avoid this one first runs CREATE TABLE via Hive and then 
 uses DataSet.insertInto() versus DataSet.saveAsTable().
 
- - NOTE: Renaming a Table via ALTER TABLE is only cheap if the table is not moving location or
- database. It is best to not use a different schema/db name between the source and destination
- tables, as the RENAME operation may result in a full copy. HiveTableSwapper in fact assumes this 
- to be true and only modifies the Hive physical LOCATION to account for the new table name 
- in the path, not the db. If different databases were used, the table would be in the wrong location.
+ - NOTE: Renaming a Table via ALTER TABLE is only cheap if the table is not moving databases. It 
+ is best to not use a different schema/db name between the source and destination tables, as the 
+ RENAME operation may result in a full copy. HiveTableSwapper in fact assumes this to be true and 
+ only modifies the Hive physical LOCATION to account for the new table name in the path, not the 
+ db. If different databases were used, the table would be in the wrong location.
  
- - NOTE: The repartitioning step rewrites the source table via Spark into a temporary table that is 
- then renamed to the destination.
+ - NOTE: The repartitioning step rewrites the source table via Spark into a temporary table that 
+ is then renamed to the destination.
 
  - Sqoop example:
 
@@ -62,11 +62,16 @@ r=$?
 return $r
 ``` 
 
+
 <!--
  * Repartitioner 
 --> 
 
  * ParquetValidate
  
- Iterates on a Parquet Table's Partitions and reports on missing columns (as a result of 
+ Iterates on a Parquet Table's Partitions and reports on missing columns (usually as a result of 
  schema evolution).
+
+
+
+
