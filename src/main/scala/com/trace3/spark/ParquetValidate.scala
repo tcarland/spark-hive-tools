@@ -20,10 +20,6 @@ import org.apache.hadoop.fs.Path
   */
 object ParquetValidate {
 
-
-  val tableSuffix = "_tmphts"
-
-
   val usage : String =
     """
       |==>  Usage: ParquetValidate <table>
@@ -63,7 +59,7 @@ object ParquetValidate {
     val files    = fs.listStatus(path).map(_.getPath).filter(!_.getName.startsWith("_"))
     val pkey     = files(0).getName()
     val keypat   = """(.*)=.*""".r
-    val keycol   = pkey match {   //TODO: throws a match error
+    val keycol   = pkey match {   // TODO: throws a match error
       case keypat(m1) => m1
     }
 
