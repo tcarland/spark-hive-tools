@@ -23,9 +23,9 @@ object HiveFunctions {
     * return the schema name only (minus the table name).
    **/
   def GetDBName ( fqtn: String ) : Option[String] = {
-    val dbpat = """(\S+)\.\S+""".r
+    val pat = """(\S+)\.\S+""".r
     fqtn match {
-      case dbpat(dbname) => Option(dbname)
+      case pat(dbname) => Option(dbname)
       case (_) => None
     }
   }
@@ -35,10 +35,9 @@ object HiveFunctions {
     * return the table name only (minus the schema name).
    **/
   def GetTableName ( fqtn: String ) : String = {
-    val tbpat = """\S+\.(\S+)""".r
-
+    val pat = """\S+\.(\S+)""".r
     fqtn match {
-      case tbpat(tblName) => tblName
+      case pat(tblName) => tblName
       case (_) => fqtn
     }
   }
@@ -72,7 +71,6 @@ object HiveFunctions {
   def GetTableLocationString ( createStr: String ) : String = {
     val pat  = """CREATE .*TABLE.*LOCATION\s+'(.+)' TBL.*""".r
 
-    // extract and rename location
     if ( createStr.contains("LOCATION") ) {
       val loc = createStr match {
         case pat(m1) => m1
@@ -143,10 +141,10 @@ object HiveFunctions {
     * @return          Tne new location string.
     */
   def CopyTableLocation ( loc: String, tableName: String ) : String = {
-    val uripat = """LOCATION\s+'(\S+/).+'$""".r
+    val pat = """LOCATION\s+'(\S+/).+'$""".r
 
     val uri = loc match {
-      case uripat(m1) => m1
+      case pat(m1) => m1
     }
 
     s" LOCATION '" + uri + GetTableName(tableName) + "' "

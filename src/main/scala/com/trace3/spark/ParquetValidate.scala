@@ -22,26 +22,10 @@ object ParquetValidate {
     """.stripMargin
 
 
-
-  def main ( args: Array[String] ) : Unit = {
-    if ( args.length < 1 ) {
-      System.err.println(usage)
-      System.exit(1)
-    }
-
-    val table = args(0)
-
-    val spark = SparkSession
-      .builder()
-      .appName("ParquetValidate")
-      .enableHiveSupport()
-      .getOrCreate
-
-    spark.sqlContext.setConf("spark.sql.hive.convertMetastoreParquet", "false")
-    spark.sqlContext.setConf("spark.sql.parquet.compression.codec", "snappy")
-    spark.sqlContext.setConf("hive.exec.dynamic.partition",  "true")
-    spark.sqlContext.setConf("hive.exec.dynamic.partition.mode",  "nonstrict")
-
+  /** Validate the partition schema versus the table schema for
+    * a given parquet table.
+   **/
+  def validate ( spark: SparkSession, table: String ) : Unit = {
     val fs       = FileSystem.get(spark.sparkContext.hadoopConfiguration)
     var pathstr  = HiveFunctions.GetTableURI(spark, table)
 
@@ -49,7 +33,6 @@ object ParquetValidate {
       System.err.println("Unable to determine path to parquet table")
       System.exit(1)
     }
-
     val path     = new Path(pathstr)
     val files    = fs.listStatus(path).map(_.getPath).filter(!_.getName.startsWith("_"))
     val pkey     = files(0).getName()
@@ -86,6 +69,24 @@ object ParquetValidate {
 
       println(" >")
     })
+  }
+
+
+  def main ( args: Array[String] ) : Unit = {
+    if ( args.length < 1 ) {
+      System.err.println(usage)
+      System.exit(1)
+    }
+
+    val table = args(0)
+
+    val spark = SparkSession
+      .builder()
+      .appName("ParquetValidate")
+      .enableHiveSupport()
+      .getOrCreate
+
+    ParquetValidate.validate(spark, table)
 
     println("> Finished.")
     spark.stop

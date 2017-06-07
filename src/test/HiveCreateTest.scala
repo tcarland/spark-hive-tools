@@ -14,8 +14,9 @@ import hive.HiveFunctions
   */
 object HiveCreateTest {
 
+  val suffix = s"_hivecreatetest"
 
-  def usage() = """  ==>  Usage: HiveCreateTest [schema.tablename]""".stripMargin
+  val usage : String = """  ==>  Usage: HiveCreateTest [schema.tablename]""".stripMargin
 
 
   def main ( args: Array[String] ) : Unit = {
@@ -40,25 +41,36 @@ object HiveCreateTest {
 
     spark.catalog.listTables("default").show
 
-    var srcdf = spark.read.table(src)
-    val curnp = srcdf.rdd.partitions.size
+    var srcdf  = spark.read.table(src)
+    val curnp  = srcdf.rdd.partitions.size
     val dbname = HiveFunctions.GetDBName(src).getOrElse(null)
 
     if ( dbname != null && dbname != "default" )
       spark.catalog.listTables(dbname).show
 
-    val srcsql = spark.sql("SHOW CREATE TABLE " + src).first.get(0).toString.
-      replaceAll("\n", " ").replaceAll("  ", " ")
+    val srcsql = HiveFunctions.GetCreateTableString(src)
 
     println("  ================== ")
     println("  ==>  BEFORE: ")
     println("  ==> " + srcsql)
 
-    val tmpsql = HiveFunctions.CopyTableCreate(srcsql, "default.hivetablecheck")
+    val target = src + suffix
+
+    val tmpsql = HiveFunctions.CopyTableCreate(srcsql, target)
 
     println("\n  ==>  AFTER: ")
     println("  ==> " + tmpsql)
     println("  ================== ")
+
+    // Create a simple DataFrame, store into a partition directory
+    val squaresDF = spark.sparkContext.makeRDD(1 to 5).map(i => (i, i * i)).toDF("value", "square")
+    val cubesDF   = spark.sparkContext.makeRDD(6 to 10).map(i => (i, i * i * i)).toDF("value", "cube")
+
+    squaresDF.write.parquet("data/test_table/key=1")
+    cubesDF.write.parquet("data/test_table/key=2")
+
+    val mergedDF = spark.read.option("mergeSchema", "true").parquet("data/test_table")
+    mergedDF.printSchema()
 
     spark.stop()
   }
