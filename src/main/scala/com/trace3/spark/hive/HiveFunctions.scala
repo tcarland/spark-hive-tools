@@ -6,7 +6,6 @@
 package com.trace3.spark.hive
 
 import org.apache.spark.sql.SparkSession
-import scala.util.matching.Regex
 
 
 // note: some of these are a little ugly and special case
@@ -32,7 +31,7 @@ object HiveFunctions {
   }
 
 
-  /** Given a fully qualified table name (ie. schema.table),
+  /** Given a fully qualified table name, ie. 'schema.table',
     * return the table name only (minus the schema name).
    **/
   def GetTableName ( fqtn: String ) : String = {
@@ -41,6 +40,47 @@ object HiveFunctions {
     fqtn match {
       case tbpat(tblName) => tblName
       case (_) => fqtn
+    }
+  }
+
+
+  /**  Returns a normalized string (no newlines) representing the Hive
+    * CREATE TABLE statement.
+    *
+    * @param spark   A SparkSession context.
+    * @param table   A qualified table name
+    * @return        The 'CREATE TABLE' statement
+    */
+  def GetCreateTableString ( spark: SparkSession, table: String ) : String = {
+    val createstr = spark.sql("SHOW CREATE TABLE " + table)
+      .first
+      .getAs[String](0)
+      .replaceAll("\n", " ")
+      .replaceAll("  ", " ")
+    createstr
+  }
+
+
+  /**  Given the full Hive SHOW CREATE TABLE string, extract the
+    *  table location. Useful for determining the HDFS location of
+    *  an external table since there is no requirement to follow the
+    *  '/path/to/schema.db/table/' semantic.
+    *
+    * @param createStr  The Hive CREATE TABLE string
+    * @return           The LOCATION target string
+    */
+  def GetTableLocationString ( createStr: String ) : String = {
+    val pat  = """CREATE .*TABLE.*LOCATION\s+'(.+)' TBL.*""".r
+
+    // extract and rename location
+    if ( createStr.contains("LOCATION") ) {
+      val loc = createStr match {
+        case pat(m1) => m1
+        case _ => s""
+      }
+      loc
+    } else {
+      s""
     }
   }
 
@@ -59,10 +99,7 @@ object HiveFunctions {
     if ( table.contains("/") ) {
       path = table
     } else {
-      val crstr = spark.sql("SHOW CREATE TABLE " + table)
-        .first
-        .get(0)
-        .toString
+      val crstr = HiveFunctions.GetCreateTableString(spark, table)
 
       path = HiveFunctions.GetTableLocationString(crstr)
 
@@ -75,44 +112,12 @@ object HiveFunctions {
           path += table
       }
     }
-    // validate hdfs path
 
     path
   }
 
-  def GetCreateTableString ( spark: SparkSession, table: String ) : String = {
-    val createstr = spark.sql("SHOW CREATE TABLE " + table)
-      .first
-      .getAs[String](0)
-      .replaceAll("\n", " ")
-      .replaceAll("  ", " ")
-    createstr
-  }
 
-
-  /**  Given the full Hive SHOW CREATE TABLE string, extract the
-    *  table location. Useful for determining the HDFS location of
-    *  an external table.
-    * @param createStr  The Hive CREATE TABLE string
-    * @return The LOCATION target string
-    */
-  def GetTableLocationString ( createStr: String ) : String = {
-    val pat  = """CREATE .*TABLE.*LOCATION\s+'(.+)' TBL.*""".r
-
-    // extract and rename location
-    if ( createStr.contains("LOCATION") ) {
-      val loc = createStr match {
-        case pat(m1) => m1
-        case _ => s""
-      }
-      loc
-    } else {
-      s""
-    }
-  }
-
-
-  /** Determine the Location URI of a given database
+  /** Determine the Location URI of a given database.
     *
     * @param spark  A SparkSession context
     * @param dbname The name of the database
@@ -125,12 +130,12 @@ object HiveFunctions {
 
 
   /**  Convenience function to rename a hive table location to a
-    *  a new table name in the same database.
-    *  eg. Given a location of
-    *  'maprfs:////user/tca/hive/warehouse/default/table1'
+    *  new table name in the same database. eg. Given a location of
+    *  'maprfs:///user/tca/hive/warehouse/default/table1'
     *  and a table name of 'table2' the new location will be
     *  'maprfs:////user/tca/hive/warehouse/default/table2'
-    *  NOTE: that his only adjusts the last directory representing
+    *
+    *  NOTE: that this only adjusts the last directory representing
     *  the table name.
     *
     * @param loc       The current location string.
