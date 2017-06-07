@@ -1,4 +1,4 @@
-/** @file HiveFunctions.scala
+/** HiveFunctions.scala
   *
   * @author Timothy C. Arland <tcarland@gmail.com>
   *
@@ -80,6 +80,15 @@ object HiveFunctions {
     path
   }
 
+  def GetCreateTableString ( spark: SparkSession, table: String ) : String = {
+    val createstr = spark.sql("SHOW CREATE TABLE " + table)
+      .first
+      .getAs[String](0)
+      .replaceAll("\n", " ")
+      .replaceAll("  ", " ")
+    createstr
+  }
+
 
   /**  Given the full Hive SHOW CREATE TABLE string, extract the
     *  table location. Useful for determining the HDFS location of
@@ -88,18 +97,20 @@ object HiveFunctions {
     * @return The LOCATION target string
     */
   def GetTableLocationString ( createStr: String ) : String = {
-    val pat = """(CREATE .*TABLE.* )LOCATION\s+'(.+').*""".r
+    val pat  = """CREATE .*TABLE.*LOCATION\s+'(.+)' TBL.*""".r
 
     // extract and rename location
     if ( createStr.contains("LOCATION") ) {
-      val (ctbl, loc) = createStr match {
-        case pat(m1, m2) => (m1, m2)
+      val loc = createStr match {
+        case pat(m1) => m1
+        case _ => s""
       }
       loc
     } else {
       s""
     }
   }
+
 
   /** Determine the Location URI of a given database
     *
@@ -109,7 +120,7 @@ object HiveFunctions {
     */
   def GetDatabaseLocationURI ( spark: SparkSession, dbname: String ) : String = {
     import spark.implicits._
-    spark.catalog.listDatabases.select("$locationUri").where($"name" === dbname).first.getAs[String](0)
+    spark.catalog.listDatabases.select($"locationUri").where($"name" === dbname).first.getAs[String](0)
   }
 
 

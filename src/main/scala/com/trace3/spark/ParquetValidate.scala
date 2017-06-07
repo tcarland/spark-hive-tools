@@ -1,16 +1,11 @@
 package com.trace3.spark
 
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql._
-import org.apache.spark.sql.types._
-import org.apache.spark.sql.functions._
-import scala.util.matching.Regex
+import org.apache.hadoop.fs.FileSystem
+import org.apache.hadoop.fs.Path
 
 import hive.HiveFunctions
 
-import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.fs.FileSystem
-import org.apache.hadoop.fs.Path
 
 /** ParquetValidate
   *
