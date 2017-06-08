@@ -1,12 +1,10 @@
-package com.trace3.spark.tests
+
 
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql._
-import org.apache.spark.sql.types._
-import org.apache.spark.sql.functions._
+import com.trace3.spark.hive.HiveFunctions
+import com.trace3.spark.ParquetValidate
 
-import hive.HiveFunctions
-
+import org.apache.hadoop.fs.Path
 
 
 /**
@@ -39,16 +37,15 @@ object HiveCreateTest {
     spark.sqlContext.setConf("hive.exec.dynamic.partition.mode", "nonstrict")
     spark.sqlContext.setConf("spark.sql.hive.convertMetastoreParquet", "false")
 
-    spark.catalog.listTables("default").show
 
     var srcdf  = spark.read.table(src)
-    val curnp  = srcdf.rdd.partitions.size
-    val dbname = HiveFunctions.GetDBName(src).getOrElse(null)
+    val curnp  = srcdf.rdd.partitions.length
+    val dbname = HiveFunctions.GetDBName(src).orNull
 
     if ( dbname != null && dbname != "default" )
       spark.catalog.listTables(dbname).show
 
-    val srcsql = HiveFunctions.GetCreateTableString(src)
+    val srcsql = HiveFunctions.GetCreateTableString(spark, src)
 
     println("  ================== ")
     println("  ==>  BEFORE: ")
@@ -66,11 +63,13 @@ object HiveCreateTest {
     val squaresDF = spark.sparkContext.makeRDD(1 to 5).map(i => (i, i * i)).toDF("value", "square")
     val cubesDF   = spark.sparkContext.makeRDD(6 to 10).map(i => (i, i * i * i)).toDF("value", "cube")
 
-    squaresDF.write.parquet("data/test_table/key=1")
-    cubesDF.write.parquet("data/test_table/key=2")
+    squaresDF.write.parquet("test.db/test_table/key=1")
+    cubesDF.write.parquet("test.db/test_table/key=2")
 
-    val mergedDF = spark.read.option("mergeSchema", "true").parquet("data/test_table")
-    mergedDF.printSchema()
+    ParquetValidate.validate(spark, "test.db/test_table")
+
+    org.apache.hadoop.fs.FileSystem.get(spark.sparkContext.hadoopConfiguration)
+      .delete(new Path("test.db"), true)
 
     spark.stop()
   }
