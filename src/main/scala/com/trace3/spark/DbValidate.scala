@@ -1,6 +1,8 @@
 package com.trace3.spark
 
 import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.functions._
+import org.apache.spark.sql.types._
 
 import scala.collection.immutable.List
 import scala.collection.immutable.Map
@@ -37,6 +39,7 @@ object DbValidate {
       |DbValidate [-dh] --jdbc <jdbc uri> --dbtable <dbtable> --hive-table <table>
       |  --jdbc <uri>              : The JDBC string for connecting to external db.
       |  --dbtable <db.table>      : Name of the source, external db schema.table
+      |  --dbkey <keycolumn>       : Name of db column to match partition key
       |  --hive-table <db.table>   : Name of the Hive table to compare against
       |  --username <user>         : The external database user
       |  --password <pw>           : Clear text password of external db user
@@ -115,4 +118,26 @@ object DbValidate {
 
 } // object DbValidate
 
+/*
 
+// preparing some example data - df1 with String type and df2 with Timestamp type
+val df1 = Seq(("a", "2016-02-01"), ("b", "2016-02-02")).toDF("key", "date")
+val df2 = Seq(
+  ("a", new Timestamp(new SimpleDateFormat("yyyy-MM-dd").parse("2016-02-01").getTime)),
+  ("b", new Timestamp(new SimpleDateFormat("yyyy-MM-dd").parse("2016-02-02").getTime))
+).toDF("key", "date")
+
+// If column is String, converts it to Timestamp
+def normalizeDate(df: DataFrame): DataFrame = {
+  df.schema("date").dataType match {
+    case StringType => df.withColumn("date", unix_timestamp($"date", "yyyy-MM-dd").cast("timestamp"))
+    case _ => df
+  }
+}
+
+// after "normalizing", you can assume date has Timestamp type -
+// both would print the same thing:
+normalizeDate(df1).rdd.map(r => r.getAs[Timestamp]("date")).foreach(println)
+normalizeDate(df2).rdd.map(r => r.getAs[Timestamp]("date")).foreach(println)
+
+ */

@@ -22,11 +22,11 @@ object HiveFunctions {
   /** Given a fully qualified table name (ie. schema.table),
     * return the schema name only (minus the table name).
    **/
-  def GetDBName ( fqtn: String ) : Option[String] = {
+  def GetDBName ( fqtn: String ) : String = {
     val pat = """(\S+)\.\S+""".r
     fqtn match {
-      case pat(dbname) => Option(dbname)
-      case (_) => None
+      case pat(dbname) => dbname
+      case (_) => fqtn
     }
   }
 
@@ -53,7 +53,7 @@ object HiveFunctions {
   def GetCreateTableString ( spark: SparkSession, table: String ) : String = {
     val createstr = spark.sql("SHOW CREATE TABLE " + table)
       .first
-      .getAs[String](0)
+      .getAs[String]("createStmt")
       .replaceAll("\n", " ")
       .replaceAll("  ", " ")
     createstr
@@ -105,7 +105,7 @@ object HiveFunctions {
         path = spark.conf.getOption("hive.metastore.warehouse.dir").getOrElse("/user/hive/warehouse")
 
         if ( table.contains(".") )
-          path += "/" + HiveFunctions.GetDBName(table).get + ".db" + "/" + HiveFunctions.GetTableName(table)
+          path += "/" + HiveFunctions.GetDBName(table) + ".db" + "/" + HiveFunctions.GetTableName(table)
         else
           path += table
       }
@@ -123,7 +123,12 @@ object HiveFunctions {
     */
   def GetDatabaseLocationURI ( spark: SparkSession, dbname: String ) : String = {
     import spark.implicits._
-    spark.catalog.listDatabases.select($"locationUri").where($"name" === dbname).first.getAs[String](0)
+
+    spark.catalog.listDatabases
+      .select($"locationUri")
+      .where($"name" === GetDBName(dbname))
+      .first
+      .getAs[String]("locationUri")
   }
 
 

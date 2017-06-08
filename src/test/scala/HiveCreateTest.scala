@@ -40,7 +40,7 @@ object HiveCreateTest {
 
     var srcdf  = spark.read.table(src)
     val curnp  = srcdf.rdd.partitions.length
-    val dbname = HiveFunctions.GetDBName(src).orNull
+    val dbname = HiveFunctions.GetDBName(src)
 
     if ( dbname != null && dbname != "default" )
       spark.catalog.listTables(dbname).show
