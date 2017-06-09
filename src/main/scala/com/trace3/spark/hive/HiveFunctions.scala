@@ -53,33 +53,10 @@ object HiveFunctions {
   def GetCreateTableString ( spark: SparkSession, table: String ) : String = {
     val createstr = spark.sql("SHOW CREATE TABLE " + table)
       .first
-      .getAs[String]("createStmt")
+      .getAs[String]("createtab_stmt")
       .replaceAll("\n", " ")
       .replaceAll("  ", " ")
     createstr
-  }
-
-
-  /**  Given the full Hive SHOW CREATE TABLE string, extract the
-    *  table location. Useful for determining the HDFS location of
-    *  an external table since there is no requirement to follow the
-    *  '/path/to/schema.db/table/' semantic.
-    *
-    * @param createStr  The Hive CREATE TABLE string
-    * @return           The LOCATION target string
-    */
-  def GetTableLocationString ( createStr: String ) : String = {
-    val pat  = """CREATE .*TABLE.*LOCATION\s+'(.+)' TBL.*""".r
-
-    if ( createStr.contains("LOCATION") ) {
-      val loc = createStr match {
-        case pat(m1) => m1
-        case _ => s""
-      }
-      loc
-    } else {
-      s""
-    }
   }
 
 
@@ -132,6 +109,29 @@ object HiveFunctions {
   }
 
 
+  /**  Given the full Hive SHOW CREATE TABLE string, extract the
+    *  table location. Useful for determining the HDFS location of
+    *  an external table since there is no requirement to follow the
+    *  '/path/to/schema.db/table/' semantic.
+    *
+    * @param createStr  The Hive CREATE TABLE string
+    * @return           The LOCATION target string
+    */
+  def GetTableLocationString ( createStr: String ) : String = {
+    val pat  = """CREATE .*TABLE.*LOCATION\s+'(.+)' TBL.*""".r
+
+    if ( createStr.contains("LOCATION") ) {
+      val loc = createStr match {
+        case pat(m1) => m1
+        case _ => s""
+      }
+      loc
+    } else {
+      s""
+    }
+  }
+
+
   /**  Convenience function to rename a hive table location to a
     *  new table name in the same database. eg. Given a location of
     *  'maprfs:///user/tca/hive/warehouse/default/table1'
@@ -152,7 +152,7 @@ object HiveFunctions {
       case pat(m1) => m1
     }
 
-    s" LOCATION '" + uri + GetTableName(tableName) + "' "
+    s" LOCATION '" + uri + HiveFunctions.GetTableName(tableName) + "' "
   }
 
 
@@ -181,7 +181,7 @@ object HiveFunctions {
       val (ctbl, loc) = tbl match {
         case pat2(m1, m2) => (m1, m2)
       }
-      val locuri = CopyTableLocation(loc, tableName)
+      val locuri = HiveFunctions.CopyTableLocation(loc, tableName)
       tbl = ctbl + locuri
     }
 

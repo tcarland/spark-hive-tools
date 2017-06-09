@@ -1,3 +1,6 @@
+/** ParquetValidate.scala
+  * Created by tcarland@gmail.com on 11/17/16
+ **/
 package com.trace3.spark
 
 import org.apache.spark.sql.SparkSession
@@ -11,14 +14,14 @@ import hive.HiveFunctions
   *
   * Compares partition schemas and reports on which partitions
   * are missing which columns.
-  * Created by tcarland@gmail.com on 11/17/16
   */
 object ParquetValidate {
 
+
   val usage : String =
     """
-      |==>  Usage: ParquetValidate <table>
-      |==>      table       = Parquet table name to validate
+      | ==>  Usage: ParquetValidate <table>
+      | ==>      table       = Parquet table name to validate
     """.stripMargin
 
 
@@ -26,32 +29,36 @@ object ParquetValidate {
     * a given parquet table.
    **/
   def validate ( spark: SparkSession, table: String ) : Unit = {
-    val fs       = FileSystem.get(spark.sparkContext.hadoopConfiguration)
-    var pathstr  = HiveFunctions.GetTableURI(spark, table)
+    var pathstr = HiveFunctions.GetTableURI(spark, table)
 
     if ( pathstr.isEmpty ) {
       System.err.println("Unable to determine path to parquet table")
       System.exit(1)
     }
-    val path     = new Path(pathstr)
-    val files    = fs.listStatus(path).map(_.getPath).filter(!_.getName.startsWith("_"))
-    val pkey     = files(0).getName()
-    val keypat   = """(.*)=.*""".r
-    val keycol   = pkey match {   // TODO: throws a match error
-      case keypat(m1) => m1
-    }
+
+    val files = FileSystem.get(spark.sparkContext.hadoopConfiguration)
+      .listStatus(new Path(pathstr))
+      .map(_.getPath)
+      .filter(!_.getName.startsWith("_"))
 
     val cols = spark.read
-      .parquet(path.toString)
+      .parquet(pathstr)
       .columns
       .map(s => s.toUpperCase)
 
-    println(" > Using path: " + pathstr)
-    println(" > Number of Partition Directories: " + files.size.toString)
-    println(" > Partition Key: " + keycol)
-    print(" > Table Columns: < ")
+    val keypat = """(.*)=.*""".r
+    val keycol = files(0).getName() match {   // TODO: throws a match error
+      case keypat(m1) => m1
+    }
+
+
+    println(" => Path: " + pathstr)
+    println(" => Num Partition Directories: " + files.length.toString)
+    println(" => Partition Key: " + keycol)
+    print(" => Table Columns: < ")
     cols.foreach(s => print(s + ", "))
-    println(">\n > Partitions  <missing columns>")
+    println(">\n => Partitions  <missing columns>")
+
 
     // Iterate on the Parquet Partitions and compare columns.
     files.foreach( path => {
@@ -69,6 +76,7 @@ object ParquetValidate {
 
       println(" >")
     })
+
   }
 
 
@@ -82,13 +90,13 @@ object ParquetValidate {
 
     val spark = SparkSession
       .builder()
-      .appName("ParquetValidate")
+      .appName("spark-hive-tools::ParquetValidate")
       .enableHiveSupport()
       .getOrCreate
 
     ParquetValidate.validate(spark, table)
 
-    println("> Finished.")
+    println(" => Finished.")
     spark.stop
   }
 }

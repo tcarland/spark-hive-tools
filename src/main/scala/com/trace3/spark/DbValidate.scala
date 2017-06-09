@@ -7,9 +7,13 @@ import org.apache.spark.sql.types._
 import scala.collection.immutable.List
 import scala.collection.immutable.Map
 
+import hive.HiveFunctions
+import org.apache.hadoop.fs.FileSystem
+import org.apache.hadoop.fs.Path
+
 
 /**
-  * Created by tca on 6/5/17.
+  * Created by tca on 6/1/17.
   */
 object DbValidate {
 
@@ -54,25 +58,20 @@ object DbValidate {
     """.stripMargin
 
 
-  def main ( args: Array[String] ) : Unit = {
-    val spark = SparkSession.builder()
-      .appName("spark-hive-tools::DbValidate")
-      .enableHiveSupport()
-      .getOrCreate()
-    import spark.implicits._
 
-    val (optMap, optList) = parseOpts(args.toList)
+  def validate ( spark: SparkSession, optMap: OptMap, optList: OptList ) : Unit = {
+    val jdbc    = optMap("jdbc")
+    val driver  = optMap("driver")
+    val dbtable = optMap("dbtable")
+    val dbkey   = optMap("dbkey")
+    val hvtable = optMap("hive-table")
+    val user    = optMap("user")
+    val pass    = optMap("password")
+    var pwfile  = optMap("password-file")
+    val ccols   = optMap("col-compare").split(',')
+    val nparts  = optMap.getOrElse[Int]("num-partitions", 5)
 
-    val jdbc    = optMap.get("jdbc")
-    val driver  = optMap.get("driver")
-    val dbtable = optMap.get("dbtable")
-    val hvtable = optMap.get("hive-table")
-    val user    = optMap.get("user")
-    val pass    = optMap.get("password")
-    var pwfile  = optMap.get("password-file")
-    val ccols   = optMap.get("col-compare")
-
-    if ( jdbc.isEmpty || dbtable.isEmpty ) {
+    if ( jdbc.isEmpty || dbtable.isEmpty || dbkey.isEmpty ) {
       System.err.println(usage)
       System.exit(1)
     }
@@ -83,7 +82,7 @@ object DbValidate {
         System.err.println(usage)
         System.exit(1)
       }
-      var pfile = pwfile.get
+      var pfile = pwfile
       if ( ! pfile.startsWith("/") )
         pfile = "file:///" + pfile
       else
@@ -91,32 +90,76 @@ object DbValidate {
 
       password = spark.sparkContext.textFile(pfile).collect.head
     } else {
-      password = pass.get
+      password = pass
     }
 
     val props = new java.util.Properties
-    props.setProperty("user", user.get)
+    props.setProperty("user", user)
     props.setProperty("password", password)
-    props.setProperty("driver", driver.get)
+    props.setProperty("driver", driver)
 
-    val edf  = spark.read.jdbc(jdbc.get, dbtable.get, props)
-    val ecnt = edf.count
-    val ecol = edf.columns
+    // compare top-level schema
+    val dcol = spark.read.jdbc(jdbc, dbtable, props).columns
+    val hcol = spark.read.table(hvtable).columns
 
-    val efiv = edf.take(5) // gives us an Array[Row]
+    println("Missing columns < ")
+    hcol.diff(dcol).foreach(s => print(s + ", "))
+    println(">")
 
-    if ( ! ccols.isEmpty ) {
-       // sum our columns
-    }
+    val huri = HiveFunctions.GetTableURI(spark, hvtable)
+    val pat  = """(.*)=(.*)$""".r
 
-    // hive table
-    val hdf  = spark.read.table(hvtable.get)
-    val hcnt = hdf.count
+    val (files, ignored) = FileSystem.get(spark.sparkContext.hadoopConfiguration)
+      .listStatus(new Path(huri))
+      .map(_.getPath)
+      .filter(!_.getName.startsWith("_")).splitAt(nparts)
+
+    files.foreach( path => {
+      val (keycol, keyval) = path.getName match {
+        case pat(m1, m2) => (m1, m2)
+      } // intentially allow match error
+
+      val dbdf = spark.read.jdbc(jdbc, dbtable, props).where("ASOF_DATE = 'timestamp'")
+      val pqdf = spark.read.parquet(path.toUri.toString)
+      val dcnt = dbdf.count
+      val pcnt = pqdf.count
+
+      if ( ccols.length == 3 ) {
+        val cols  = ccols :+ dbkey
+        val sumDF = dbdf.select(cols.head, cols.tail: _*)
+          .withColumn("SUM", ccols.map(c => col(c)).reduce((c1,c2) => c1+c2).alias("SUMS"))
+          .limit(5)
+        sumDF.show
+      }
+
+    })
+
+    //val efiv = edf.take(5) // gives us an Array[Row]
+
+  }
 
 
+
+  def main ( args: Array[String] ) : Unit = {
+
+    val spark = SparkSession.builder()
+      .appName("spark-hive-tools::DbValidate")
+      .enableHiveSupport()
+      .getOrCreate()
+    import spark.implicits._
+
+    val (optMap, optList) = parseOpts(args.toList)
+
+    DbValidate.validate(spark, optMap, optList)
+
+    println(" => Finished.")
+    spark.stop
   } // main
 
 } // object DbValidate
+
+
+
 
 /*
 
@@ -140,4 +183,26 @@ def normalizeDate(df: DataFrame): DataFrame = {
 normalizeDate(df1).rdd.map(r => r.getAs[Timestamp]("date")).foreach(println)
 normalizeDate(df2).rdd.map(r => r.getAs[Timestamp]("date")).foreach(println)
 
+
+import java.util.Properties
+
+// Option 1: Build the parameters into a JDBC url to pass into the DataFrame APIs
+val jdbcUsername = "USER_NAME"
+val jdbcPassword = "PASSWORD"
+val jdbcHostname = "HOSTNAME"
+val jdbcPort = 3306
+val jdbcDatabase ="DATABASE"
+val jdbcUrl = s"jdbc:mysql://${jdbcHostname}:${jdbcPort}/${jdbcDatabase}?user=${jdbcUsername}&password=${jdbcPassword}"
+
+// Option 2: Create a Properties() object to hold the parameters. You can create the JDBC URL without passing in the user/password parameters directly.
+val connectionProperties = new Properties()
+connectionProperties.put("user", "USER_NAME")
+connectionProperties.put("password", "PASSWORD")
+
+
+val df2 = spark.read.jdbc(url, "table_state", props)
+  .select("table_name", "target", "last_update")
+  .where("last_update = 1491945095510").explain
+
+        //val sumdf = dbdf.select(ccols.map(c => sum(c)): _*)
  */

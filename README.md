@@ -9,7 +9,7 @@ spark-hive-tools
 
  * HiveTableSwapper
  * ParquetValidate
- * DBColumnCompare
+ * DBValidate
 
 ##### HiveTableSwapper
 
@@ -76,9 +76,11 @@ return $r
  Iterates on a Parquet Table's Partitions and reports on missing columns (usually as a result of 
  schema evolution).
 
+
 ##### DBValidate
 
-Compares the columns of an external database table (via JDBC) to a given Hive Table.
+Compares the columns of an external database table (via JDBC) to a given Hive Table with the 
+option of comparing value columns as well.
 
 
 

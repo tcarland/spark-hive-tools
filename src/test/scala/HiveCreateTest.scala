@@ -1,4 +1,6 @@
-
+/** HiveCreateTest.scala
+  * Created by tca on 12/5/16.
+ **/
 
 import org.apache.spark.sql.SparkSession
 import com.trace3.spark.hive.HiveFunctions
@@ -7,9 +9,6 @@ import com.trace3.spark.ParquetValidate
 import org.apache.hadoop.fs.Path
 
 
-/**
-  * Created by tca on 12/5/16.
-  */
 object HiveCreateTest {
 
   val suffix = s"_hivecreatetest"
