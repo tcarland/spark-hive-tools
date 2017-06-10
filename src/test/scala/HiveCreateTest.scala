@@ -22,7 +22,7 @@ object HiveCreateTest {
       System.exit(1)
     }
 
-    var src = args(0)
+    val src = args(0)
 
     val spark = SparkSession
       .builder()
@@ -37,7 +37,7 @@ object HiveCreateTest {
     spark.sqlContext.setConf("spark.sql.hive.convertMetastoreParquet", "false")
 
 
-    var srcdf  = spark.read.table(src)
+    val srcdf  = spark.read.table(src)
     val curnp  = srcdf.rdd.partitions.length
     val dbname = HiveFunctions.GetDBName(src)
 

@@ -172,7 +172,7 @@ object HiveFunctions {
     val pat3 = """(CREATE .*TABLE\s+)`(.+)`(\(.*)""".r
 
     // extract table properties
-    var (tbl, prop) = createsql match {
+    var (tbl, _) = createsql match {
       case pat1(m1, m2) => (m1, m2)
     }
 
@@ -186,7 +186,7 @@ object HiveFunctions {
     }
 
     // set tableName
-    val (ctbl, name, rest) = tbl match {
+    val (ctbl, _, rest) = tbl match {
       case pat3(m1, m2, m3) => (m1, m2, m3)
     }
 

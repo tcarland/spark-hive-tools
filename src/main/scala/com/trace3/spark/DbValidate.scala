@@ -69,10 +69,11 @@ object DbValidate {
     val hvtable = optMap("hive-table")
     val user    = optMap("user")
     val pass    = optMap("password")
-    var pwfile  = optMap("password-file")
+    val pwfile  = optMap("password-file")
     val sumcols = optMap("columns").split(',')
     val nparts  = optMap.getOrElse("num-partitions", "5").toInt
     val nrows   = optMap.getOrElse("num-rows", "5").toInt
+    val keypat  = """(.*)=(.*)$""".r
 
     if ( jdbc.isEmpty || dbtable.isEmpty || dbkey.isEmpty ) {
       System.err.println(usage)
@@ -82,14 +83,16 @@ object DbValidate {
     var password = ""
     if ( pass.isEmpty ) {
       if ( pwfile.isEmpty ) {
+        System.err.println("validate() Error: No Db Password found")
         System.err.println(usage)
         System.exit(1)
       }
       var pfile = pwfile
+
       if ( ! pfile.startsWith("/") )
-        pfile = "file:///" + pfile
+        pfile  = "file:///" + pfile
       else
-        pfile = "file://" + pfile
+        pfile  = "file://" + pfile
 
       password = spark.sparkContext.textFile(pfile).collect.head
     } else {
@@ -105,21 +108,21 @@ object DbValidate {
     val dcol = spark.read.jdbc(jdbc, dbtable, props).columns
     val hcol = spark.read.table(hvtable).columns
 
+    // display column diff
     println("Missing columns < ")
     hcol.diff(dcol).foreach(s => print(s + ", "))
     println(">")
 
-    val huri = HiveFunctions.GetTableURI(spark, hvtable)
-    val pat  = """(.*)=(.*)$""".r
 
     val (files, _) = FileSystem.get(spark.sparkContext.hadoopConfiguration)
-      .listStatus(new Path(huri))
+      .listStatus(new Path(HiveFunctions.GetTableURI(spark, hvtable)))
       .map(_.getPath)
       .filter(!_.getName.startsWith("_")).splitAt(nparts)
 
+
     files.foreach( path => {
       val (keycol, keyval) = path.getName match {
-        case pat(m1, m2) => (m1, m2)
+        case keypat(m1, m2) => (m1, m2)
       }
 
       // keyval type consideration

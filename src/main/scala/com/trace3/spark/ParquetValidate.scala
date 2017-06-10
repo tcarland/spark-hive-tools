@@ -30,7 +30,7 @@ object ParquetValidate {
    **/
   def validate ( spark: SparkSession, table: String ) : Unit = {
     val keypat  = """(.*)=.*""".r
-    var pathstr = HiveFunctions.GetTableURI(spark, table)
+    val pathstr = HiveFunctions.GetTableURI(spark, table)
 
     if ( pathstr.isEmpty ) {
       System.err.println("Unable to determine path to parquet table")
@@ -42,7 +42,7 @@ object ParquetValidate {
       .map(_.getPath)
       .filter(!_.getName.startsWith("_"))
 
-    val keycol = files(0).getName() match {
+    val keycol = files(0).getName match {
       case keypat(m1) => m1
     }
 
