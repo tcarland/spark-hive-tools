@@ -29,6 +29,7 @@ object ParquetValidate {
     * a given parquet table.
    **/
   def validate ( spark: SparkSession, table: String ) : Unit = {
+    val keypat  = """(.*)=.*""".r
     var pathstr = HiveFunctions.GetTableURI(spark, table)
 
     if ( pathstr.isEmpty ) {
@@ -41,15 +42,15 @@ object ParquetValidate {
       .map(_.getPath)
       .filter(!_.getName.startsWith("_"))
 
+    val keycol = files(0).getName() match {
+      case keypat(m1) => m1
+    }
+
     val cols = spark.read
       .parquet(pathstr)
       .columns
       .map(s => s.toUpperCase)
-
-    val keypat = """(.*)=.*""".r
-    val keycol = files(0).getName() match {   // TODO: throws a match error
-      case keypat(m1) => m1
-    }
+      .filter(s => ! s.equalsIgnoreCase(keycol))
 
 
     println(" => Path: " + pathstr)
@@ -67,13 +68,7 @@ object ParquetValidate {
         .columns.map(s => s.toUpperCase)
 
       print("    " + path.getName + " < ")
-
-      // diff columns ignoring the partition key
-      cols.diff(colp).foreach(s => {
-        if ( ! s.equalsIgnoreCase(keycol) )
-          print(s + ", ")
-      })
-
+      cols.diff(colp).foreach(s => print(s + ", "))
       println(" >")
     })
 

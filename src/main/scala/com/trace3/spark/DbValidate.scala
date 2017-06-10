@@ -51,9 +51,11 @@ object DbValidate {
       |  --password-file <pwfile>  : Name of a user readable file containing the password
       |                              Use a fully qualified path
       |  --driver <jdbc_driver>    : The JDBC Driver class eg. 'oracle.jdbc.driver.OracleDriver'
-      |  --col-compare <col1,colN> : A comma delimited list of value columns to compare
+      |  --columns <col1,colN>     : A comma delimited list of value columns to compare
       |                              by performing a SUM(col1,col2,col3) on the 5th row of
       |                              each table (external and hive).
+      |  --num-rows <n>            : Limit of number of rows to compare columns
+      |  --num-partitions <n>      : Number of table partitions to iterate through
       |
     """.stripMargin
 
@@ -68,8 +70,9 @@ object DbValidate {
     val user    = optMap("user")
     val pass    = optMap("password")
     var pwfile  = optMap("password-file")
-    val ccols   = optMap("col-compare").split(',')
-    val nparts  = optMap.getOrElse[Int]("num-partitions", 5)
+    val sumcols = optMap("columns").split(',')
+    val nparts  = optMap.getOrElse("num-partitions", "5").toInt
+    val nrows   = optMap.getOrElse("num-rows", "5").toInt
 
     if ( jdbc.isEmpty || dbtable.isEmpty || dbkey.isEmpty ) {
       System.err.println(usage)
@@ -109,7 +112,7 @@ object DbValidate {
     val huri = HiveFunctions.GetTableURI(spark, hvtable)
     val pat  = """(.*)=(.*)$""".r
 
-    val (files, ignored) = FileSystem.get(spark.sparkContext.hadoopConfiguration)
+    val (files, _) = FileSystem.get(spark.sparkContext.hadoopConfiguration)
       .listStatus(new Path(huri))
       .map(_.getPath)
       .filter(!_.getName.startsWith("_")).splitAt(nparts)
@@ -117,24 +120,27 @@ object DbValidate {
     files.foreach( path => {
       val (keycol, keyval) = path.getName match {
         case pat(m1, m2) => (m1, m2)
-      } // intentially allow match error
+      }
 
-      val dbdf = spark.read.jdbc(jdbc, dbtable, props).where("ASOF_DATE = 'timestamp'")
+      // keyval type consideration
+      val dbdf = spark.read.jdbc(jdbc, dbtable, props)
       val pqdf = spark.read.parquet(path.toUri.toString)
+
+      dbdf.schema(dbkey).dataType match {
+        case StringType => "where "
+      }
+
+      if ( ! sumcols.isEmpty ) {
+        val cols  = sumcols :+ dbkey
+        val sumDF = dbdf.select(cols.head, cols.tail: _*)
+          .withColumn("SUM", sumcols.map(c => col(c)).reduce((c1,c2) => c1+c2).alias("SUMS"))
+          .limit(nrows)
+        sumDF.show
+      }
       val dcnt = dbdf.count
       val pcnt = pqdf.count
 
-      if ( ccols.length == 3 ) {
-        val cols  = ccols :+ dbkey
-        val sumDF = dbdf.select(cols.head, cols.tail: _*)
-          .withColumn("SUM", ccols.map(c => col(c)).reduce((c1,c2) => c1+c2).alias("SUMS"))
-          .limit(5)
-        sumDF.show
-      }
-
     })
-
-    //val efiv = edf.take(5) // gives us an Array[Row]
 
   }
 
@@ -146,7 +152,6 @@ object DbValidate {
       .appName("spark-hive-tools::DbValidate")
       .enableHiveSupport()
       .getOrCreate()
-    import spark.implicits._
 
     val (optMap, optList) = parseOpts(args.toList)
 
