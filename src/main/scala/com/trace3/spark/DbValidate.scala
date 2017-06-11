@@ -153,15 +153,15 @@ object DbValidate {
 
       val sql   = pushdownQuery(extDF.schema(dbkey), keyval, dbtable, sumcols)
       val dcols = sumcols :+ dbkey
-      val pcols = sumcols :+ keycol
 
       val dbdf  = spark.read.jdbc(url, sql, props)
         .withColumn("SUM", sumcols.map(c => col(c)).reduce((c1,c2) => c1+c2).alias("SUMS"))
         .limit(nrows)
 
       val pqdf  = spark.read.parquet(path.toUri.toString)
-        .select(pcols.head, pcols.tail: _*)
+        .select(dcols.head, dcols.tail: _*)
         .withColumn("SUM", sumcols.map(c => col(c)).reduce((c1,c2) => c1+c2).alias("SUMS"))
+        .limit(nrows)
 
       dbdf.show
       pqdf.show
