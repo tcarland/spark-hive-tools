@@ -37,6 +37,19 @@ object HiveCreateTest {
     spark.sqlContext.setConf("spark.sql.hive.convertMetastoreParquet", "false")
 
 
+    // LIST ALL TABLES EVERYWHERE!
+    println("Metastore Tables:")
+    spark.catalog.listDatabases
+      .select($"name", $"locationUri")
+      .collect
+      .foreach( row => {
+        val name = row.getAs[String]("name")
+        if ( ! name.isEmpty ) {
+          println("  " + name + "  :  " + row.getAs[String]("locationUri"))
+          spark.catalog.listTables(name).show(50, false)
+        }
+      })
+
     val srcdf  = spark.read.table(src)
     val curnp  = srcdf.rdd.partitions.length
     val dbname = HiveFunctions.GetDBName(src)
@@ -69,6 +82,7 @@ object HiveCreateTest {
 
     org.apache.hadoop.fs.FileSystem.get(spark.sparkContext.hadoopConfiguration)
       .delete(new Path("test.db"), true)
+
 
     spark.stop()
   }

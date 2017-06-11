@@ -19,6 +19,31 @@ object DbValidate {
 
   type OptMap  = Map[String, String]
   type OptList = List[String]
+  val  dbalias = "dbval_alias"
+
+
+  val usage : String =
+    """
+      |DbValidate [-dh] --jdbc <jdbc uri> --dbtable <dbtable> --hive-table <table>
+      |  --jdbc <uri>              : The JDBC string for connecting to external db.
+      |  --dbtable <db.table>      : Name of the source, external db schema.table
+      |  --dbkey <keycolumn>       : Name of db column to match partition key
+      |  --hive-table <db.table>   : Name of the Hive table to compare against
+      |  --username <user>         : The external database user
+      |  --password <pw>           : Clear text password of external db user
+      |                              (use --password-file is preferred
+      |  --password-file <pwfile>  : Name of a user readable file containing the password
+      |                              Use a fully qualified path
+      |  --driver <jdbc_driver>    : The JDBC Driver class eg. 'oracle.jdbc.driver.OracleDriver'
+      |  --sumcols <col1,colN>     : A comma delimited list of value columns to compare
+      |                              by performing a SUM(col1,col2,col3) on the 5th row of
+      |                              each table (external and hive).
+      |  --num-rows <n>            : Limit of number of rows to compare columns
+      |  --num-partitions <n>      : Number of table partitions to iterate through
+      |
+    """.stripMargin
+
+
 
   def parseOpts ( args: OptList ) : (OptMap, OptList)  =
   {
@@ -38,44 +63,39 @@ object DbValidate {
   }
 
 
-  val usage : String =
-    """
-      |DbValidate [-dh] --jdbc <jdbc uri> --dbtable <dbtable> --hive-table <table>
-      |  --jdbc <uri>              : The JDBC string for connecting to external db.
-      |  --dbtable <db.table>      : Name of the source, external db schema.table
-      |  --dbkey <keycolumn>       : Name of db column to match partition key
-      |  --hive-table <db.table>   : Name of the Hive table to compare against
-      |  --username <user>         : The external database user
-      |  --password <pw>           : Clear text password of external db user
-      |                              (use --password-file is preferred
-      |  --password-file <pwfile>  : Name of a user readable file containing the password
-      |                              Use a fully qualified path
-      |  --driver <jdbc_driver>    : The JDBC Driver class eg. 'oracle.jdbc.driver.OracleDriver'
-      |  --columns <col1,colN>     : A comma delimited list of value columns to compare
-      |                              by performing a SUM(col1,col2,col3) on the 5th row of
-      |                              each table (external and hive).
-      |  --num-rows <n>            : Limit of number of rows to compare columns
-      |  --num-partitions <n>      : Number of table partitions to iterate through
-      |
-    """.stripMargin
+  def pushdownQuery ( key: StructField, keyval: String, table: String, cols: Array[String] ) : String = {
+    var sql = "(SELECT " + key.name
 
+    if ( ! cols.isEmpty )
+      cols.foreach(str => sql += (", " + str))
+    sql += (" FROM " + table + " WHERE " + key.name + " = ")
+
+    key.dataType match {
+      case StringType    => sql += ("\"" + keyval + "\"")
+      case TimestampType => sql
+      case _ => sql += keyval
+    }
+    sql += ") " + dbalias
+
+    sql
+  }
 
 
   def validate ( spark: SparkSession, optMap: OptMap, optList: OptList ) : Unit = {
-    val jdbc    = optMap("jdbc")
-    val driver  = optMap("driver")
-    val dbtable = optMap("dbtable")
-    val dbkey   = optMap("dbkey")
-    val hvtable = optMap("hive-table")
-    val user    = optMap("user")
-    val pass    = optMap("password")
-    val pwfile  = optMap("password-file")
-    val sumcols = optMap("columns").split(',')
+    val url     = optMap.getOrElse("jdbc", "")
+    val driver  = optMap.getOrElse("driver", "com.mysql.jdbc.Driver")
+    val dbtable = optMap.getOrElse("dbtable", "")
+    val dbkey   = optMap.getOrElse("dbkey", "")
+    val hvtable = optMap.getOrElse("hive-table", "")
+    val user    = optMap.getOrElse("user", "")
+    val pass    = optMap.getOrElse("password", "")
+    val pwfile  = optMap.getOrElse("password-file", "")
+    val sumcols = optMap.getOrElse("sumcols", "").split(',')
     val nparts  = optMap.getOrElse("num-partitions", "5").toInt
     val nrows   = optMap.getOrElse("num-rows", "5").toInt
     val keypat  = """(.*)=(.*)$""".r
 
-    if ( jdbc.isEmpty || dbtable.isEmpty || dbkey.isEmpty ) {
+    if ( url.isEmpty || dbtable.isEmpty || dbkey.isEmpty ) {
       System.err.println(usage)
       System.exit(1)
     }
@@ -105,12 +125,17 @@ object DbValidate {
     props.setProperty("driver", driver)
 
     // compare top-level schema
-    val dcol = spark.read.jdbc(jdbc, dbtable, props).columns
-    val hcol = spark.read.table(hvtable).columns
+    val extDF    = spark.read.jdbc(url, dbtable, props)
+    val dbcols   = extDF.columns
+    val dbtype   = extDF.schema(dbkey).dataType
+    val hvDF     = spark.read.table(hvtable)
+    val hvcols   = hvDF.columns
 
-    // display column diff
+    println("dbtable: " + dbtable + " <")
+    dbcols.foreach(s => print(s + ", "))
+    println(">")
     println("Missing columns < ")
-    hcol.diff(dcol).foreach(s => print(s + ", "))
+    hvcols.diff(dbcols).foreach(s => print(s + ", "))
     println(">")
 
 
@@ -125,13 +150,16 @@ object DbValidate {
         case keypat(m1, m2) => (m1, m2)
       }
 
-      // keyval type consideration
-      val dbdf = spark.read.jdbc(jdbc, dbtable, props)
-      val pqdf = spark.read.parquet(path.toUri.toString)
+      val sql   = pushdownQuery(extDF.schema(dbkey), keyval, dbtable, sumcols)
+      val dcols = sumcols :+ dbkey
+      val pcols = sumcols :+ keycol
 
-      dbdf.schema(dbkey).dataType match {
-        case StringType => "where "
-      }
+      val dbdf  = spark.read.jdbc(url, sql, props)
+        .withColumn("SUM", sumcols.map(c => col(c)).reduce((c1,c2) => c1+c2).alias("SUMS"))
+        .limit(nrows)
+      val pqdf  = spark.read.parquet(path.toUri.toString)
+        .select(pcols.head, pcols.tail: _*)
+        .withColumn("SUM", sumcols.map(c => col(c)).reduce((c1,c2) => c1+c2).alias("SUMS"))
 
       if ( ! sumcols.isEmpty ) {
         val cols  = sumcols :+ dbkey
@@ -142,6 +170,10 @@ object DbValidate {
       }
       val dcnt = dbdf.count
       val pcnt = pqdf.count
+
+      println("partition " + keycol + "=" + keyval)
+      println("  external: " + dcnt.toString)
+      println("  hive:     " + pcnt.toString)
 
     })
 
@@ -168,49 +200,3 @@ object DbValidate {
 
 
 
-
-/*
-
-// preparing some example data - df1 with String type and df2 with Timestamp type
-val df1 = Seq(("a", "2016-02-01"), ("b", "2016-02-02")).toDF("key", "date")
-val df2 = Seq(
-  ("a", new Timestamp(new SimpleDateFormat("yyyy-MM-dd").parse("2016-02-01").getTime)),
-  ("b", new Timestamp(new SimpleDateFormat("yyyy-MM-dd").parse("2016-02-02").getTime))
-).toDF("key", "date")
-
-// If column is String, converts it to Timestamp
-def normalizeDate(df: DataFrame): DataFrame = {
-  df.schema("date").dataType match {
-    case StringType => df.withColumn("date", unix_timestamp($"date", "yyyy-MM-dd").cast("timestamp"))
-    case _ => df
-  }
-}
-
-// after "normalizing", you can assume date has Timestamp type -
-// both would print the same thing:
-normalizeDate(df1).rdd.map(r => r.getAs[Timestamp]("date")).foreach(println)
-normalizeDate(df2).rdd.map(r => r.getAs[Timestamp]("date")).foreach(println)
-
-
-import java.util.Properties
-
-// Option 1: Build the parameters into a JDBC url to pass into the DataFrame APIs
-val jdbcUsername = "USER_NAME"
-val jdbcPassword = "PASSWORD"
-val jdbcHostname = "HOSTNAME"
-val jdbcPort = 3306
-val jdbcDatabase ="DATABASE"
-val jdbcUrl = s"jdbc:mysql://${jdbcHostname}:${jdbcPort}/${jdbcDatabase}?user=${jdbcUsername}&password=${jdbcPassword}"
-
-// Option 2: Create a Properties() object to hold the parameters. You can create the JDBC URL without passing in the user/password parameters directly.
-val connectionProperties = new Properties()
-connectionProperties.put("user", "USER_NAME")
-connectionProperties.put("password", "PASSWORD")
-
-
-val df2 = spark.read.jdbc(url, "table_state", props)
-  .select("table_name", "target", "last_update")
-  .where("last_update = 1491945095510").explain
-
-        //val sumdf = dbdf.select(ccols.map(c => sum(c)): _*)
- */
