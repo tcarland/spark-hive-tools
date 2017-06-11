@@ -142,7 +142,8 @@ object DbValidate {
     val (files, _) = FileSystem.get(spark.sparkContext.hadoopConfiguration)
       .listStatus(new Path(HiveFunctions.GetTableURI(spark, hvtable)))
       .map(_.getPath)
-      .filter(!_.getName.startsWith("_")).splitAt(nparts)
+      .filter(!_.getName.startsWith("_"))
+      .splitAt(nparts)
 
 
     files.foreach( path => {
@@ -157,17 +158,14 @@ object DbValidate {
       val dbdf  = spark.read.jdbc(url, sql, props)
         .withColumn("SUM", sumcols.map(c => col(c)).reduce((c1,c2) => c1+c2).alias("SUMS"))
         .limit(nrows)
+
       val pqdf  = spark.read.parquet(path.toUri.toString)
         .select(pcols.head, pcols.tail: _*)
         .withColumn("SUM", sumcols.map(c => col(c)).reduce((c1,c2) => c1+c2).alias("SUMS"))
 
-      if ( ! sumcols.isEmpty ) {
-        val cols  = sumcols :+ dbkey
-        val sumDF = dbdf.select(cols.head, cols.tail: _*)
-          .withColumn("SUM", sumcols.map(c => col(c)).reduce((c1,c2) => c1+c2).alias("SUMS"))
-          .limit(nrows)
-        sumDF.show
-      }
+      dbdf.show
+      pqdf.show
+
       val dcnt = dbdf.count
       val pcnt = pqdf.count
 
