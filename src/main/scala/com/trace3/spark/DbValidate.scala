@@ -45,6 +45,9 @@ object DbValidate {
 
 
 
+  /** Function for recursively parsing an argument list providing both a 
+    * 'List' of flags (with no arguments) and a 'Map' of argument key/values
+   **/
   def parseOpts ( args: OptList ) : (OptMap, OptList)  =
   {
     def nextOpt ( argList: OptList, optMap: OptMap ) : (OptMap, OptList) = {
@@ -63,6 +66,7 @@ object DbValidate {
   }
 
 
+  /** Constructs our query for pushdown to spark.read.jdbc  */
   def pushdownQuery ( key: StructField, keyval: String, table: String, cols: Array[String] ) : String = {
     var sql = "(SELECT " + key.name
 
@@ -72,7 +76,7 @@ object DbValidate {
 
     key.dataType match {
       case StringType    => sql += ("\"" + keyval + "\"")
-      case TimestampType => sql += "to_timestamp('" + keyval + "', 'yyyy-MM-dd HH:mm:ss.S')"
+      case TimestampType => sql += "'" + keyval + "'"
       case _ => sql += keyval
     }
     sql += ") " + dbalias
@@ -81,6 +85,7 @@ object DbValidate {
   }
 
 
+ 
   def validate ( spark: SparkSession, optMap: OptMap, optList: OptList ) : Unit = {
     val url     = optMap.getOrElse("jdbc", "")
     val driver  = optMap.getOrElse("driver", "com.mysql.jdbc.Driver")
@@ -197,6 +202,5 @@ object DbValidate {
   } // main
 
 } // object DbValidate
-
 
 
