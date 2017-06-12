@@ -72,7 +72,7 @@ object DbValidate {
 
     key.dataType match {
       case StringType    => sql += ("\"" + keyval + "\"")
-      case TimestampType => sql
+      case TimestampType => sql += "to_timestamp('" + keyval + "', 'yyyy-MM-dd HH:mm:ss.S')"
       case _ => sql += keyval
     }
     sql += ") " + dbalias
@@ -163,7 +163,9 @@ object DbValidate {
         .withColumn("SUM", sumcols.map(c => col(c)).reduce((c1,c2) => c1+c2).alias("SUMS"))
         .limit(nrows)
 
+      println("External Database:")
       dbdf.show
+      println("Parquet Table:")
       pqdf.show
 
       val dcnt = dbdf.count
