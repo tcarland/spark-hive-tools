@@ -3,17 +3,19 @@ package com.trace3.spark
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
-
+import org.apache.hadoop.fs.FileSystem
+import org.apache.hadoop.fs.Path
 import scala.collection.immutable.List
 import scala.collection.immutable.Map
 
+import java.sql.Timestamp
+import java.text.SimpleDateFormat
+
 import hive.HiveFunctions
-import org.apache.hadoop.fs.FileSystem
-import org.apache.hadoop.fs.Path
 
 
-/**
-  * Created by tca on 6/1/17.
+/**  DbValidate
+  *
   */
 object DbValidate {
 
@@ -76,7 +78,12 @@ object DbValidate {
 
     key.dataType match {
       case StringType    => sql += ("\"" + keyval + "\"")
-      case TimestampType => sql += "'" + keyval + "'"
+      case TimestampType => {
+        var str = keyval
+        if ( ! keyval.contains(":") )
+          str = new Timestamp(new SimpleDateFormat("yyy-MM-dd HH:mm:ss.S").parse(keyval).getTime).toString
+        sql += " TIMESTAMP '" + str + "'"
+      }
       case _ => sql += keyval
     }
     sql += ") " + dbalias
@@ -95,7 +102,7 @@ object DbValidate {
     val user    = optMap.getOrElse("user", "")
     val pass    = optMap.getOrElse("password", "")
     val pwfile  = optMap.getOrElse("password-file", "")
-    val sumcols = optMap.getOrElse("sumcols", "").split(',')
+    val sumcols = optMap.getOrElse("sumcols", "").split(',').filter(s => !s.isEmpty)
     val nparts  = optMap.getOrElse("num-partitions", "5").toInt
     val nrows   = optMap.getOrElse("num-rows", "5").toInt
     val keypat  = """(.*)=(.*)$""".r
@@ -131,18 +138,22 @@ object DbValidate {
 
     // compare top-level schema
     val extDF    = spark.read.jdbc(url, dbtable, props)
-    val dbcols   = extDF.columns
+    val dbcols   = extDF.columns.map(s => s.toUpperCase)
     val dbtype   = extDF.schema(dbkey).dataType
     val hvDF     = spark.read.table(hvtable)
-    val hvcols   = hvDF.columns
+    val hvcols   = hvDF.columns.map(s => s.toUpperCase)
 
     println("dbtable: " + dbtable + " <")
     dbcols.foreach(s => print(s + ", "))
     println(">")
     println("Missing columns < ")
-    hvcols.diff(dbcols).foreach(s => print(s + ", "))
+    dbcols.diff(hvcols).foreach(s => print(s + ", "))
     println(">")
 
+    if ( sumcols.length <= 1 ) {
+      System.err.println("No columns provided. Exiting early")
+      System.exit(0)
+    }
 
     val (files, _) = FileSystem.get(spark.sparkContext.hadoopConfiguration)
       .listStatus(new Path(HiveFunctions.GetTableURI(spark, hvtable)))
@@ -160,6 +171,7 @@ object DbValidate {
       val dcols = sumcols :+ dbkey
 
       val dbdf  = spark.read.jdbc(url, sql, props)
+        .select(dcols.head, dcols.tail: _*)
         .withColumn("SUM", sumcols.map(c => col(c)).reduce((c1,c2) => c1+c2).alias("SUMS"))
         .limit(nrows)
 
@@ -183,7 +195,6 @@ object DbValidate {
     })
 
   }
-
 
 
   def main ( args: Array[String] ) : Unit = {
