@@ -79,9 +79,10 @@ object DbValidate {
     key.dataType match {
       case StringType    => sql += ("\"" + keyval + "\"")
       case TimestampType => {
-        var str = keyval
+        var str  = keyval
+        val form = "yyyy-MM-dd HH:mm:ss.S"
         if ( ! keyval.contains(":") )
-          str = new Timestamp(new SimpleDateFormat("yyy-MM-dd HH:mm:ss.S").parse(keyval).getTime).toString
+          str = new Timestamp(new SimpleDateFormat(form).parse(keyval).getTime).toString
         sql += " TIMESTAMP '" + str + "'"
       }
       case _ => sql += keyval
