@@ -2,12 +2,16 @@ spark-hive-tools
 ================
 
 
-#### Overview
+##### Overview
 
   Provides convenient Scala functions for interacting or performing common operations on Hive tables.
 
 
  * HiveTableSwapper
+ * ParquetValidate
+ * DBValidate
+
+##### HiveTableSwapper
 
 A tool intended for the post-injestion process of moving a new table into place of an existing 
 table; optionally allowing for a table repartition in the process.
@@ -53,7 +57,7 @@ fi
 
 sqoop import --connect jdbc:oracle:thin:@orapita-db:1521/dev_name_con -m 8 \
  --table=PBX.GET_LIMIT_V --as-parquetfile --compression-codec=snappy \
- --split-by=ACCT_NO --hive-import --hive-database=risk 
+ --split-by=ACCT_NO --hive-import --hive-database=PBX 
  --hive-table=PBX.GET_LIMIT_VTMP 
  --username $DBUSER --password-file $DBPASSFILE
 
@@ -67,11 +71,16 @@ return $r
  * Repartitioner 
 --> 
 
- * ParquetValidate
+##### ParquetValidate
  
  Iterates on a Parquet Table's Partitions and reports on missing columns (usually as a result of 
  schema evolution).
 
+
+##### DBValidate
+
+Compares the columns of an external database table (via JDBC) to a given Hive Table with the 
+option of comparing value columns as well.
 
 
 

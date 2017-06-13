@@ -79,9 +79,7 @@ object HiveTableSwapper {
       else
         srcdf = srcdf.repartition(np)
 
-      // Get CREATE TABLE sql from Hive and manipulate
-      val srcsql = spark.sql("SHOW CREATE TABLE " + src).first.get(0).toString.
-        replaceAll("\n", " ").replaceAll("  ", " ")
+      val srcsql = HiveFunctions.GetCreateTableString(spark, src)
       val tmptbl = src + tableSuffix
       val tmpsql = HiveFunctions.CopyTableCreate(srcsql, tmptbl)
 

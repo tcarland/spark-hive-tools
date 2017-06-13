@@ -1,31 +1,78 @@
+/** ParquetValidate.scala
+  * Created by tcarland@gmail.com on 11/17/16
+ **/
 package com.trace3.spark
 
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql._
-import org.apache.spark.sql.types._
-import org.apache.spark.sql.functions._
-import scala.util.matching.Regex
+import org.apache.hadoop.fs.FileSystem
+import org.apache.hadoop.fs.Path
 
 import hive.HiveFunctions
 
-import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.fs.FileSystem
-import org.apache.hadoop.fs.Path
 
 /** ParquetValidate
   *
   * Compares partition schemas and reports on which partitions
   * are missing which columns.
-  * Created by tcarland@gmail.com on 11/17/16
   */
 object ParquetValidate {
 
+
   val usage : String =
     """
-      |==>  Usage: ParquetValidate <table>
-      |==>      table       = Parquet table name to validate
+      | ==>  Usage: ParquetValidate <table>
+      | ==>      table       = Parquet table name to validate
     """.stripMargin
 
+
+  /** Validate the partition schema versus the table schema for
+    * a given parquet table.
+   **/
+  def validate ( spark: SparkSession, table: String ) : Unit = {
+    val keypat  = """(.*)=.*""".r
+    val pathstr = HiveFunctions.GetTableURI(spark, table)
+
+    if ( pathstr.isEmpty ) {
+      System.err.println("Unable to determine path to parquet table")
+      System.exit(1)
+    }
+
+    val files = FileSystem.get(spark.sparkContext.hadoopConfiguration)
+      .listStatus(new Path(pathstr))
+      .map(_.getPath)
+      .filter(!_.getName.startsWith("_"))
+
+    val keycol = files(0).getName match {
+      case keypat(m1) => m1
+    }
+
+    val cols = spark.read
+      .parquet(pathstr)
+      .columns
+      .map(s => s.toUpperCase)
+      .filter(s => ! s.equalsIgnoreCase(keycol))
+
+
+    println(" => Path: " + pathstr)
+    println(" => Num Partition Directories: " + files.length.toString)
+    println(" => Partition Key: " + keycol)
+    print(" => Table Columns: < ")
+    cols.foreach(s => print(s + ", "))
+    println(">\n => Partitions  <missing columns>")
+
+
+    // Iterate on the Parquet Partitions and compare columns.
+    files.foreach( path => {
+      val colp = spark.read
+        .parquet(path.toUri.toString)
+        .columns.map(s => s.toUpperCase)
+
+      print("    " + path.getName + " < ")
+      cols.diff(colp).foreach(s => print(s + ", "))
+      println(" >")
+    })
+
+  }
 
 
   def main ( args: Array[String] ) : Unit = {
@@ -38,61 +85,13 @@ object ParquetValidate {
 
     val spark = SparkSession
       .builder()
-      .appName("ParquetValidate")
+      .appName("spark-hive-tools::ParquetValidate")
       .enableHiveSupport()
       .getOrCreate
 
-    spark.sqlContext.setConf("spark.sql.hive.convertMetastoreParquet", "false")
-    spark.sqlContext.setConf("spark.sql.parquet.compression.codec", "snappy")
-    spark.sqlContext.setConf("hive.exec.dynamic.partition",  "true")
-    spark.sqlContext.setConf("hive.exec.dynamic.partition.mode",  "nonstrict")
+    ParquetValidate.validate(spark, table)
 
-    val fs       = FileSystem.get(spark.sparkContext.hadoopConfiguration)
-    var pathstr  = HiveFunctions.GetTableURI(spark, table)
-
-    if ( pathstr.isEmpty ) {
-      System.err.println("Unable to determine path to parquet table")
-      System.exit(1)
-    }
-
-    val path     = new Path(pathstr)
-    val files    = fs.listStatus(path).map(_.getPath).filter(!_.getName.startsWith("_"))
-    val pkey     = files(0).getName()
-    val keypat   = """(.*)=.*""".r
-    val keycol   = pkey match {   // TODO: throws a match error
-      case keypat(m1) => m1
-    }
-
-    val cols = spark.read
-      .parquet(path.toString)
-      .columns
-      .map(s => s.toUpperCase)
-
-    println(" > Using path: " + pathstr)
-    println(" > Number of Partition Directories: " + files.size.toString)
-    println(" > Partition Key: " + keycol)
-    print(" > Table Columns: < ")
-    cols.foreach(s => print(s + ", "))
-    println(">\n > Partitions  <missing columns>")
-
-    // Iterate on the Parquet Partitions and compare columns.
-    files.foreach( path => {
-      val colp = spark.read
-        .parquet(path.toUri.toString)
-        .columns.map(s => s.toUpperCase)
-
-      print("    " + path.getName + " < ")
-
-      // diff columns ignoring the partition key
-      cols.diff(colp).foreach(s => {
-        if ( ! s.equalsIgnoreCase(keycol) )
-          print(s + ", ")
-      })
-
-      println(" >")
-    })
-
-    println("> Finished.")
+    println(" => Finished.")
     spark.stop
   }
 }

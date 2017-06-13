@@ -5,8 +5,8 @@
 
 SRC_TABLE="$1"
 
-APP_JAR="target/spark-hive-tools-0.1.4-jar-with-dependencies.jar"
-APP_CLASS="com.trace3.spark.HiveTableCheck"
+APP_JAR="target/spark-hive-tools-test-0.1.5.jar"
+APP_CLASS="HiveCreateTest"
 
 
 spark-submit --master yarn \

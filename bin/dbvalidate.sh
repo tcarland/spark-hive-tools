@@ -1,10 +1,10 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
-#  Spark submit script for the ParquetValidate
-#
+# spark-submit for DbValidate
+
 
 APP_JAR="target/spark-hive-tools-0.1.5-jar-with-dependencies.jar"
-APP_CLASS="com.trace3.spark.ParquetValidate"
+APP_CLASS="com.trace3.spark.DbValidate"
 
 spark-submit --master yarn \
   --deploy-mode client \
@@ -14,5 +14,3 @@ spark-submit --master yarn \
   --class $APP_CLASS \
   $APP_JAR \
   $@
-
-
