@@ -30,6 +30,10 @@ object DbValidate {
       |  --jdbc <uri>              : The JDBC string for connecting to external db.
       |  --dbtable <db.table>      : Name of the source, external db schema.table
       |  --dbkey <keycolumn>       : Name of db column to match partition key
+      |  --composite-key <key=val> : Additional keys as needed to obtain unique rows
+      |                              This is appended to a where clause per partition to
+      |                              ensure we compare the same rows in tables that have
+      |                              composite keys. key1=val1, key2=val2, etc.
       |  --hive-table <db.table>   : Name of the Hive table to compare against
       |  --username <user>         : The external database user
       |  --password <pw>           : Clear text password of external db user
@@ -69,7 +73,11 @@ object DbValidate {
 
 
   /** Constructs our query for pushdown to spark.read.jdbc  */
-  def pushdownQuery ( key: StructField, keyval: String, table: String, cols: Array[String] ) : String = {
+  def pushdownQuery ( key:    StructField,
+                      keyval: String,
+                      addkey: String,
+                      table:  String,
+                      cols:   Array[String] ) : String = {
     var sql = "(SELECT " + key.name
 
     if ( ! cols.isEmpty )
@@ -87,6 +95,10 @@ object DbValidate {
       }
       case _ => sql += keyval
     }
+
+    if (  addkey.length > 1 )
+      sql += addkey
+
     sql += ") " + dbalias
 
     sql
@@ -99,6 +111,7 @@ object DbValidate {
     val driver  = optMap.getOrElse("driver", "com.mysql.jdbc.Driver")
     val dbtable = optMap.getOrElse("dbtable", "")
     val dbkey   = optMap.getOrElse("dbkey", "")
+    val addkey  = optMap.getOrElse("composite-key", "")
     val hvtable = optMap.getOrElse("hive-table", "")
     val user    = optMap.getOrElse("user", "")
     val pass    = optMap.getOrElse("password", "")
@@ -168,7 +181,7 @@ object DbValidate {
         case keypat(m1, m2) => (m1, m2)
       }
 
-      val sql   = pushdownQuery(extDF.schema(dbkey), keyval, dbtable, sumcols)
+      val sql   = pushdownQuery(extDF.schema(dbkey), keyval, addkey, dbtable, sumcols)
       val dcols = sumcols :+ dbkey
 
       val dbdf  = spark.read.jdbc(url, sql, props)
