@@ -5,7 +5,7 @@
 
 SRC_TABLE="$1"
 
-APP_JAR="target/spark-hive-tools-test-0.1.5.jar"
+APP_JAR="target/spark-hive-tools-test-0.1.6.jar"
 APP_CLASS="HiveCreateTest"
 
 
