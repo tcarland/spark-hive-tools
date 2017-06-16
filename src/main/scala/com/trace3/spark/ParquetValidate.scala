@@ -1,5 +1,6 @@
 /** ParquetValidate.scala
-  * Created by tcarland@gmail.com on 11/17/16
+  *
+  * @author Timothy C. Arland <tarland@trace3.com, tcarland@gmail.com>
  **/
 package com.trace3.spark
 

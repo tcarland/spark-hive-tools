@@ -1,6 +1,6 @@
 /** HiveFunctions.scala
   *
-  * @author Timothy C. Arland <tcarland@gmail.com>
+  * @author Timothy C. Arland <tarland@trace3.com, tcarland@gmail.com>
   *
   */
 package com.trace3.spark.hive

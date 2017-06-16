@@ -1,3 +1,8 @@
+/** DbValidate.scala
+  *
+  * @author Timothy C. Arland <tarland@trace3.com, tcarland@gmail.com>
+  *
+ **/
 package com.trace3.spark
 
 import org.apache.spark.sql.SparkSession
@@ -14,8 +19,9 @@ import java.text.SimpleDateFormat
 import hive.HiveFunctions
 
 
-/**  DbValidate
-  *
+/**  DbValidate : Attempts to compare an external database to a parquet|hive table
+  *  by comparing the column names and optionally run a SUM(col1, col2, ..)
+  *  function on '--num-rows', per partition for '--num-partitions'
   */
 object DbValidate {
 
@@ -35,17 +41,18 @@ object DbValidate {
       |                              ensure we compare the same rows in tables that have
       |                              composite keys. key1=val1, key2=val2, etc.
       |  --hive-table <db.table>   : Name of the Hive table to compare against
-      |  --username <user>         : The external database user
-      |  --password <pw>           : Clear text password of external db user
-      |                              (use --password-file is preferred
-      |  --password-file <pwfile>  : Name of a user readable file containing the password
-      |                              Use a fully qualified path
+      |  --username <user>         : The external database username.
+      |  --password <pw>           : Password of the external db user.
+      |                              (use of --password-file is preferred and more secure)
+      |  --password-file <pwfile>  : Fully qualified path to a file containing the password.
       |  --driver <jdbc_driver>    : The JDBC Driver class eg. 'oracle.jdbc.driver.OracleDriver'
       |  --sumcols <col1,colN>     : A comma delimited list of value columns to compare
       |                              by performing a SUM(col1,col2,col3) on the 5th row of
       |                              each table (external and hive).
-      |  --num-rows <n>            : Limit of number of rows to compare columns
-      |  --num-partitions <n>      : Number of table partitions to iterate through
+      |  --num-rows <n>            : The number of rows to run the SUM(columns) comparison.
+      |  --num-partitions <n>      : Number of table partitions to iterate through.
+      |                              Use the '-R' option to reverse the partition order and
+      |                              operate on the last <n> partitions.
       |
     """.stripMargin
 
@@ -126,23 +133,21 @@ object DbValidate {
       System.exit(1)
     }
 
-    var password = ""
-    if ( pass.isEmpty ) {
+    val password : String = if ( pass.isEmpty ) {
       if ( pwfile.isEmpty ) {
         System.err.println("validate() Error: No Db Password found")
         System.err.println(usage)
         System.exit(1)
       }
-      var pfile = pwfile
 
-      if ( ! pfile.startsWith("/") )
-        pfile  = "file:///" + pfile
+      val pfile = if ( pwfile.startsWith("/") )
+        s"file://" + pwfile
       else
-        pfile  = "file://" + pfile
+        s"file:///" + pwfile
 
-      password = spark.sparkContext.textFile(pfile).collect.head
+      spark.sparkContext.textFile(pfile).collect.head
     } else {
-      password = pass
+      pass
     }
 
     val props = new java.util.Properties
@@ -169,12 +174,18 @@ object DbValidate {
       System.exit(0)
     }
 
-    val (files, _) = FileSystem.get(spark.sparkContext.hadoopConfiguration)
+    val f : Array[Path] = FileSystem.get(spark.sparkContext.hadoopConfiguration)
       .listStatus(new Path(HiveFunctions.GetTableURI(spark, hvtable)))
       .map(_.getPath)
       .filter(!_.getName.startsWith("_"))
-      .splitAt(nparts)
 
+    val files = if ( optList.contains("R") ) {
+      val (fx, _) = f.reverse.splitAt(nparts)
+      fx
+    } else {
+      val (fx, _) = f.reverse.splitAt(nparts)
+      fx
+    }
 
     files.foreach( path => {
       val (keycol, keyval) = path.getName match {
