@@ -158,7 +158,6 @@ object DbValidate {
     // compare top-level schema
     val extDF    = spark.read.jdbc(url, dbtable, props)
     val dbcols   = extDF.columns.map(s => s.toUpperCase)
-    val dbtype   = extDF.schema(dbkey).dataType
     val hvDF     = spark.read.table(hvtable)
     val hvcols   = hvDF.columns.map(s => s.toUpperCase)
 
