@@ -41,7 +41,7 @@ object DbValidate {
       |                              ensure we compare the same rows in tables that have
       |                              composite keys. key1=val1, key2=val2, etc.
       |  --hive-table <db.table>   : Name of the Hive table to compare against
-      |  --username <user>         : The external database username.
+      |  --user <user>             : The external database username.
       |  --password <pw>           : Password of the external db user.
       |                              (use of --password-file is preferred and more secure)
       |  --password-file <pwfile>  : Fully qualified path to a file containing the password.
@@ -158,20 +158,19 @@ object DbValidate {
     // compare top-level schema
     val extDF    = spark.read.jdbc(url, dbtable, props)
     val dbcols   = extDF.columns.map(s => s.toUpperCase)
-    val dbtype   = extDF.schema(dbkey).dataType
     val hvDF     = spark.read.table(hvtable)
     val hvcols   = hvDF.columns.map(s => s.toUpperCase)
 
-    println("dbtable: " + dbtable + " <")
+    print("\ndbtable: " + dbtable + " <")
     dbcols.foreach(s => print(s + ", "))
     println(">")
-    println("Missing columns < ")
+    print("Missing columns < ")
     dbcols.diff(hvcols).foreach(s => print(s + ", "))
     println(">")
 
     if ( sumcols.length <= 1 ) {
-      System.err.println("No columns provided. Exiting early")
-      System.exit(0)
+      println("No columns provided. Exiting early")
+      return
     }
 
     val f : Array[Path] = FileSystem.get(spark.sparkContext.hadoopConfiguration)
@@ -195,30 +194,24 @@ object DbValidate {
       val sql   = pushdownQuery(extDF.schema(dbkey), keyval, addkey, dbtable, sumcols)
       val dcols = sumcols :+ dbkey
 
-      val dbdf  = spark.read.jdbc(url, sql, props)
-        .select(dcols.head, dcols.tail: _*)
-        .withColumn("SUM", sumcols.map(c => col(c)).reduce((c1,c2) => c1+c2).alias("SUMS"))
-        .limit(nrows)
+      val dbdf  = spark.read.jdbc(url, sql, props).select(dcols.head, dcols.tail: _*)
+      val dbcnt = dbdf.count
+      val dbsum = dbdf.withColumn("SUM", sumcols.map(c => col(c)).reduce((c1,c2) => c1+c2).alias("SUMS")).limit(nrows)
 
-      val pqdf  = spark.read.parquet(path.toUri.toString)
-        .select(dcols.head, dcols.tail: _*)
-        .withColumn("SUM", sumcols.map(c => col(c)).reduce((c1,c2) => c1+c2).alias("SUMS"))
-        .limit(nrows)
+      val pqdf  = spark.read.parquet(path.toUri.toString).select(dcols.head, dcols.tail: _*)
+      val pqcnt = pqdf.count
+      val pqsum = pqdf.withColumn("SUM", sumcols.map(c => col(c)).reduce((c1,c2) => c1+c2).alias("SUMS")).limit(nrows)
 
-      println("External Database:")
-      dbdf.show
-      println("Parquet Table:")
-      pqdf.show
-
-      val dcnt = dbdf.count
-      val pcnt = pqdf.count
-
-      println("partition " + keycol + "=" + keyval)
-      println("  external: " + dcnt.toString)
-      println("  hive:     " + pcnt.toString)
+      //println(" sql query: " + sql)
+      println("\nPartition: " + keycol + "=" + keyval)
+      println("External:  Count = " + dbcnt.toString)
+      dbsum.show
+      println("Parquet:  Count = " + pqcnt.toString)
+      pqsum.show
 
     })
 
+    return
   }
 
 
