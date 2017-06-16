@@ -8,7 +8,7 @@ spark-hive-tools
 
 
  * HiveTableSwapper - Move tables with an optional re-partition.
- * ParquetValidate  - Validate a table schema across parquet partitions.
+ * ParquetValidate  - Compare schemas across parquet partitions (ie. schema evolution).
  * DBValidate       - Compare counts and schema of a hive table to an external jdbc database.
 
 ##### HiveTableSwapper
@@ -80,7 +80,7 @@ return $r
 ##### DBValidate
 
 Compares the columns of an external database table (via JDBC) to a given Hive Table with the 
-option of comparing value columns as well.
+option of comparing column values by running a sum of n cols aross y rows.
 
 
 
