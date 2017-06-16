@@ -7,9 +7,9 @@ spark-hive-tools
   Provides convenient Scala functions for interacting or performing common operations on Hive tables.
 
 
- * HiveTableSwapper
- * ParquetValidate
- * DBValidate
+ * HiveTableSwapper - Move tables with an optional re-partition.
+ * ParquetValidate  - Validate a table schema across parquet partitions.
+ * DBValidate       - Compare counts and schema of a hive table to an external jdbc database.
 
 ##### HiveTableSwapper
 
