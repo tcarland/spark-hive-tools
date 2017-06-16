@@ -204,7 +204,7 @@ object DbValidate {
       val pqsum = pqdf.withColumn("SUM", sumcols.map(c => col(c)).reduce((c1,c2) => c1+c2).alias("SUMS")).limit(nrows)
 
       //println(" sql query: " + sql)
-      println("partition: " + keycol + "=" + keyval)
+      println("\nPartition: " + keycol + "=" + keyval)
       println("External:  Count = " + dbcnt.toString)
       dbsum.show
       println("Parquet:  Count = " + pqcnt.toString)
