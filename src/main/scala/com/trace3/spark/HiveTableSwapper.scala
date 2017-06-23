@@ -62,6 +62,7 @@ object HiveTableSwapper {
       .getOrCreate
     import spark.implicits._
 
+    spark.sparkContext.setLogLevel("WARN")
     spark.sqlContext.setConf("spark.sql.hive.convertMetastoreParquet", "false")
     spark.sqlContext.setConf("spark.sql.parquet.compression.codec", "snappy")
     spark.sqlContext.setConf("hive.exec.dynamic.partition",  "true")

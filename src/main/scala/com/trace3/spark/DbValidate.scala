@@ -221,6 +221,7 @@ object DbValidate {
       .appName("spark-hive-tools::DbValidate")
       .enableHiveSupport()
       .getOrCreate()
+    spark.sparkContext.setLogLevel("WARN")
 
     val (optMap, optList) = parseOpts(args.toList)
 
