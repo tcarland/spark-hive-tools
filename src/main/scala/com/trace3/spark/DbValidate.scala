@@ -50,7 +50,7 @@ object DbValidate {
       |                              Use the '-R' option to reverse the partition order and
       |                              operate on the last <n> partitions.
       |
-      |   If Additional keys as needed to obtain unique rows for a column compare, the
+      |   If Additional keys are needed to obtain unique rows for a column compare, the
       |   system environment variable SHT_COMPOSITE_KEY can be set to a string that will
       |   be appended to the where clause of the sql query, and should conform to the sql
       |   syntax of 'Col1=val1 AND Col2=val2 AND Col3=val3'.
