@@ -28,14 +28,47 @@ object HiveTableSwapper {
 
   val usage : String =
     """
-      |==>  Usage: HiveTableSwapper <srctable> <dstTable> [num_partitions] [partition_by]
-      |==>      srctable       =  Source Hive Table to Alter
-      |==>      dsttable       =  Name of the new table (Note any existing table is DROPPED!)
-      |==>      num_partitions =  Optional number of partitions for the new table.
-      |==>      partition_by   =  Optional name of the column to repartition by.
+      |==>  Usage: HiveTableSwapper <srcTable> <dstTable> [n_partitions] [partition_by]
+      |==>      srcTable      =  Source Hive Table to Alter
+      |==>      dstTable      =  Name of the new table
+      |                          (Note any existing table by this name is DROPPED!)
+      |==>      n_partitions  =  Optional number of partitions for the new table.
+      |==>      partition_by  =  Optional name of the column to repartition by.
     """.stripMargin
 
 
+
+def SwapTable ( spark: SparkSession, src: String, dst: String, np: Int, col: String ) : Unit = {
+    var srctbl = src
+    var srcdf  = spark.read.table(src)
+    val curnp  = srcdf.rdd.partitions.size
+
+    // IF a repartition is needed, we create a temp table to write to
+    if ( np > 0 && curnp != np ) {
+      if ( col != null )   // repartition
+        srcdf = srcdf.repartition(np, srcdf(col))
+      else
+        srcdf = srcdf.repartition(np)
+
+      val srcsql = HiveFunctions.GetCreateTableString(spark, src)
+      val tmptbl = src + tableSuffix
+      val tmpsql = HiveFunctions.CopyTableCreate(srcsql, tmptbl)
+
+      // create the temp table, insert, and remap the source table
+      spark.sql(tmpsql)
+      srcdf.write.format("parquet").insertInto(tmptbl)
+      spark.sql("DROP TABLE " + src)
+      srctbl = tmptbl
+    }
+
+    try {
+      spark.sql("DROP TABLE IF EXISTS " + dst)
+    } catch {
+      case _ : Throwable => 
+    }
+
+    spark.sql("ALTER TABLE " + srctbl + " RENAME TO " + dst)
+  }
 
 
   def main ( args: Array[String] ) : Unit = {
@@ -68,36 +101,7 @@ object HiveTableSwapper {
     spark.sqlContext.setConf("hive.exec.dynamic.partition",  "true")
     spark.sqlContext.setConf("hive.exec.dynamic.partition.mode",  "nonstrict")
 
-    var srcdf  = spark.read.table(src)
-    val curnp  = srcdf.rdd.partitions.size
-
-    // IF a repartition is needed, we create a temp table to write to
-    if ( np > 0 && curnp != np ) {
-
-      // repartition
-      if ( splt != null )
-        srcdf = srcdf.repartition(np, srcdf(splt))
-      else
-        srcdf = srcdf.repartition(np)
-
-      val srcsql = HiveFunctions.GetCreateTableString(spark, src)
-      val tmptbl = src + tableSuffix
-      val tmpsql = HiveFunctions.CopyTableCreate(srcsql, tmptbl)
-
-      // create the temp table, insert, and remap the source table
-      spark.sql(tmpsql)
-      srcdf.write.format("parquet").insertInto(tmptbl)
-      spark.sql("DROP TABLE " + src)
-      src = tmptbl
-    }
-
-    try {
-      spark.sql("DROP TABLE IF EXISTS " + dst)
-    } catch {
-      case _ : Throwable => 
-    }
-
-    spark.sql("ALTER TABLE " + src + " RENAME TO " + dst)
+    SwapTable(spark, src, dst, np, splt)
 
     spark.stop
   }
