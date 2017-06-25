@@ -18,7 +18,7 @@ object SHTTestInit {
 
     val spark = SparkSession
       .builder()
-      .appName("HiveCreateTest")
+      .appName("SHTTestInit")
       .enableHiveSupport()
       .getOrCreate
 
