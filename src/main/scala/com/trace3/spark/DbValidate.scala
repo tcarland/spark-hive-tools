@@ -40,7 +40,7 @@ object DbValidate {
       |  --user <user>             : The external database username.
       |  --password <pw>           : Password of the external db user.
       |                              (use of --password-file is preferred and more secure)
-      |  --password-file <pwfile>  : Fully qualified path to a file containing the password.
+      |  --password-file <pwfile>  : HDFS path to a file containing the password.
       |  --driver <jdbc_driver>    : The JDBC Driver class eg. 'oracle.jdbc.driver.OracleDriver'
       |  --sumcols <col1,colN>     : A comma delimited list of value columns to compare
       |                              by performing a SUM(col1,col2,col3) on the 5th row of
@@ -95,9 +95,10 @@ object DbValidate {
       case StringType    => sql += ("\"" + keyval + "\"")
       case TimestampType => {
         var str  = keyval
-        val form = "yyyy-MM-dd HH:mm:ss.S"
-        if ( ! keyval.contains(":") )
-          str = new Timestamp(new SimpleDateFormat(form).parse(keyval).getTime).toString
+        if ( keyval.contains(":") )
+          str = new Timestamp(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.S").parse(keyval).getTime).toString
+        else
+          str = new Timestamp(new SimpleDateFormat("yyyy-MM-dd").parse(keyval).getTime).toString
         sql += " TIMESTAMP '" + str + "'"
       }
       case _ => sql += keyval
@@ -112,7 +113,12 @@ object DbValidate {
   }
 
 
- 
+  /** Validate an external db table with a Hive/Parquet table.
+    *
+    * @param spark   The SparkSession context.
+    * @param optMap  A Map of configuration parameters.
+    * @param optList A list of command switches.
+    */
   def validate ( spark: SparkSession, optMap: OptMap, optList: OptList ) : Unit = {
     val url     = optMap.getOrElse("jdbc", "")
     val driver  = optMap.getOrElse("driver", "com.mysql.jdbc.Driver")
@@ -139,13 +145,7 @@ object DbValidate {
         System.err.println(usage)
         System.exit(1)
       }
-
-      val pfile = if ( pwfile.startsWith("/") )
-        s"file://" + pwfile
-      else
-        s"file:///" + pwfile
-
-      spark.sparkContext.textFile(pfile).collect.head
+      spark.sparkContext.textFile(pwfile).collect.head
     } else {
       pass
     }

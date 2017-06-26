@@ -103,4 +103,6 @@ test data in both MySQL and Hive for running the test app.
 
 ```
 
+  Note that all scripts should be run relative to the project root directory.
+
 
