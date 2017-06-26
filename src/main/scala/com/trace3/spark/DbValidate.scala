@@ -99,13 +99,13 @@ object DbValidate {
           str = new Timestamp(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.S").parse(keyval).getTime).toString
         else
           str = new Timestamp(new SimpleDateFormat("yyyy-MM-dd").parse(keyval).getTime).toString
-        sql += " TIMESTAMP '" + str + "'"
+        sql += "TIMESTAMP '" + str + "'"
       }
       case _ => sql += keyval
     }
 
     if (  addkey.length > 1 )
-      sql += addkey
+      sql += " AND " + addkey
 
     sql += ") " + dbalias
 
@@ -193,6 +193,7 @@ object DbValidate {
 
       val sql   = pushdownQuery(extDF.schema(dbkey), keyval, addkey, dbtable, sumcols)
       val dcols = sumcols :+ dbkey
+      println("  JDBC SQL QUERY: " + sql)
 
       val dbdf  = spark.read.jdbc(url, sql, props).select(dcols.head, dcols.tail: _*)
       val dbcnt = dbdf.count
