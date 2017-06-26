@@ -94,6 +94,8 @@ test data in both MySQL and Hive for running the test app.
   $ hadoop fs -put src/test/resources/sht_data2.csv
   $ ./src/test/resources/dbval-init.sh mysqlhost:port  
 ```
+  To build the jar for testing, first compile via ***mvn package*** followed by running the script
+**src/test/resources/build-test-jar.sh**
 
   Run the dbval-test.sh script providing the hostname of the external mysql server to run the test.
 ```
