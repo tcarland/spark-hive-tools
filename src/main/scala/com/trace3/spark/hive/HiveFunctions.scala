@@ -81,8 +81,13 @@ object HiveFunctions {
       if ( path.isEmpty ) {
         path = spark.conf.getOption("hive.metastore.warehouse.dir").getOrElse("/user/hive/warehouse")
 
-        if ( table.contains(".") )
-          path += "/" + HiveFunctions.GetDBName(table) + ".db" + "/" + HiveFunctions.GetTableName(table)
+        if ( table.contains(".") ) {
+          val dbname = HiveFunctions.GetDBName(table)
+          if ( dbname.equalsIgnoreCase("default") )
+            path += "/" + HiveFunctions.GetTableName(table)
+          else
+            path += "/" + dbname + ".db" + "/" + HiveFunctions.GetTableName(table)
+        }
         else
           path += table
       }

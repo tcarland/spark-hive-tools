@@ -83,4 +83,22 @@ Compares the columns of an external database table (via JDBC) to a given Hive Ta
 option of comparing column values by running a sum of n cols aross y rows.
 
 
+Testing DbValidate:
+
+   The test for DBValidate uses a mysql instance to run the comparison. The following will seed the 
+test data in both MySQL and Hive for running the test app.
+
+```
+  $ mysql -u root -p < src/test/resources/sht-mysql-init.sql
+  $ hadoop fs -put src/test/resources/sht_data1.csv
+  $ hadoop fs -put src/test/resources/sht_data2.csv
+  $ ./src/test/resources/dbval-init.sh mysqlhost:port  
+```
+
+  Run the dbval-test.sh script providing the hostname of the external mysql server to run the test.
+```
+  ./bin/dbval-test.sh mydbhost:3306
+
+```
+
 

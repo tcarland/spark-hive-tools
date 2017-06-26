@@ -36,10 +36,6 @@ object DbValidate {
       |  --jdbc <uri>              : The JDBC string for connecting to external db.
       |  --dbtable <db.table>      : Name of the source, external db schema.table
       |  --dbkey <keycolumn>       : Name of db column to match partition key
-      |  --composite-key <key=val> : Additional keys as needed to obtain unique rows
-      |                              This is appended to a where clause per partition to
-      |                              ensure we compare the same rows in tables that have
-      |                              composite keys. key1=val1, key2=val2, etc.
       |  --hive-table <db.table>   : Name of the Hive table to compare against
       |  --user <user>             : The external database username.
       |  --password <pw>           : Password of the external db user.
@@ -48,12 +44,16 @@ object DbValidate {
       |  --driver <jdbc_driver>    : The JDBC Driver class eg. 'oracle.jdbc.driver.OracleDriver'
       |  --sumcols <col1,colN>     : A comma delimited list of value columns to compare
       |                              by performing a SUM(col1,col2,col3) on the 5th row of
-      |                              each table (external and hive).
+      |                              each table (external and hive). Note do not use spaces.
       |  --num-rows <n>            : The number of rows to run the SUM(columns) comparison.
       |  --num-partitions <n>      : Number of table partitions to iterate through.
       |                              Use the '-R' option to reverse the partition order and
       |                              operate on the last <n> partitions.
       |
+      |   If Additional keys are needed to obtain unique rows for a column compare, the
+      |   system environment variable SHT_COMPOSITE_KEY can be set to a string that will
+      |   be appended to the where clause of the sql query, and should conform to the sql
+      |   syntax of 'Col1=val1 AND Col2=val2 AND Col3=val3'.
     """.stripMargin
 
 
@@ -118,7 +118,6 @@ object DbValidate {
     val driver  = optMap.getOrElse("driver", "com.mysql.jdbc.Driver")
     val dbtable = optMap.getOrElse("dbtable", "")
     val dbkey   = optMap.getOrElse("dbkey", "")
-    val addkey  = optMap.getOrElse("composite-key", "")
     val hvtable = optMap.getOrElse("hive-table", "")
     val user    = optMap.getOrElse("user", "")
     val pass    = optMap.getOrElse("password", "")
@@ -126,6 +125,7 @@ object DbValidate {
     val sumcols = optMap.getOrElse("sumcols", "").split(',').filter(s => !s.isEmpty)
     val nparts  = optMap.getOrElse("num-partitions", "5").toInt
     val nrows   = optMap.getOrElse("num-rows", "5").toInt
+    val addkey  = sys.env.getOrElse("SHT_COMPOSITE_KEY", "")
     val keypat  = """(.*)=(.*)$""".r
 
     if ( url.isEmpty || dbtable.isEmpty || dbkey.isEmpty ) {

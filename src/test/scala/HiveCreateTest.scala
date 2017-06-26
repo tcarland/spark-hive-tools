@@ -3,10 +3,11 @@
  **/
 
 import org.apache.spark.sql.SparkSession
+import org.apache.hadoop.fs.Path
+
 import com.trace3.spark.hive.HiveFunctions
 import com.trace3.spark.ParquetValidate
 
-import org.apache.hadoop.fs.Path
 
 
 object HiveCreateTest {
