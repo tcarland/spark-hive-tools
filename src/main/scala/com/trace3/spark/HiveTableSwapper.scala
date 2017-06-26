@@ -90,7 +90,7 @@ def SwapTable ( spark: SparkSession, src: String, dst: String, np: Int, col: Str
 
     val spark = SparkSession
       .builder()
-      .appName("HiveTableSwapper")
+      .appName("spark-hive-tools::HiveTableSwapper")
       .enableHiveSupport()
       .getOrCreate
     import spark.implicits._
