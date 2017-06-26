@@ -95,4 +95,10 @@ test data in both MySQL and Hive for running the test app.
   $ ./src/test/resources/dbval-init.sh mysqlhost:port  
 ```
 
+  Run the dbval-test.sh script providing the hostname of the external mysql server to run the test.
+```
+  ./bin/dbval-test.sh mydbhost:3306
+
+```
+
 
