@@ -44,7 +44,7 @@ object DbValidate {
       |  --driver <jdbc_driver>    : The JDBC Driver class eg. 'oracle.jdbc.driver.OracleDriver'
       |  --sumcols <col1,colN>     : A comma delimited list of value columns to compare
       |                              by performing a SUM(col1,col2,col3) on the 5th row of
-      |                              each table (external and hive).
+      |                              each table (external and hive). Note do not use spaces.
       |  --num-rows <n>            : The number of rows to run the SUM(columns) comparison.
       |  --num-partitions <n>      : Number of table partitions to iterate through.
       |                              Use the '-R' option to reverse the partition order and

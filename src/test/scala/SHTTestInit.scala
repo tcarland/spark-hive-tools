@@ -7,11 +7,13 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.types._
 
 
+/* Initializes our DataSets for running a DbValidate job */
 object SHTTestInit {
 
   def usage : String =
     """
       |  Usage: SHTTestInit <dbhost:port>
+      |
     """.stripMargin
 
   def main ( args: Array[String] ) : Unit = {
