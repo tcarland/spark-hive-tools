@@ -27,7 +27,6 @@ object DbValidate {
 
   type OptMap  = Map[String, String]
   type OptList = List[String]
-  val  dbalias = "dbval_alias"
 
 
   val usage : String =
@@ -84,30 +83,36 @@ object DbValidate {
                       keyval: String,
                       addkey: String,
                       table:  String,
-                      cols:   Array[String] ) : String = {
+                      cols:   Array[String],
+                      alias:  String = "" ) : String = {
     var sql = "(SELECT " + key.name
 
-    if ( ! cols.isEmpty )
-      cols.foreach(str => sql += (", " + str))
-    sql += (" FROM " + table + " WHERE " + key.name + " = ")
+    if ( key == null || keyval.isEmpty ) {
+      sql = "(SELECT * FROM " + table
+      if ( ! addkey.isEmpty )
+        sql += " WHERE " + addkey
+    } else {
+      if ( ! cols.isEmpty )
+        cols.foreach(str => sql += (", " + str))
+      sql += (" FROM " + table + " WHERE " + key.name + " = ")
 
-    key.dataType match {
-      case StringType    => sql += ("\"" + keyval + "\"")
-      case TimestampType => {
-        var str  = keyval
-        if ( keyval.contains(":") )
-          str = new Timestamp(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.S").parse(keyval).getTime).toString
-        else
-          str = new Timestamp(new SimpleDateFormat("yyyy-MM-dd").parse(keyval).getTime).toString
-        sql += "TIMESTAMP '" + str + "'"
+      key.dataType match {
+        case StringType    => sql += ("\"" + keyval + "\"")
+        case TimestampType => {
+          var str  = keyval
+          if ( keyval.contains(":") )
+            str = new Timestamp(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.S").parse(keyval).getTime).toString
+          else
+            str = new Timestamp(new SimpleDateFormat("yyyy-MM-dd").parse(keyval).getTime).toString
+          sql += "TIMESTAMP '" + str + "'"
+        }
+        case _ => sql += keyval
       }
-      case _ => sql += keyval
+
+      if ( ! addkey.isEmpty )
+        sql += " AND " + addkey
     }
-
-    if (  addkey.length > 1 )
-      sql += " AND " + addkey
-
-    sql += ") " + dbalias
+    sql += ") " + alias
 
     sql
   }
@@ -156,10 +161,11 @@ object DbValidate {
     props.setProperty("driver", driver)
 
     // compare top-level schema
-    val extDF    = spark.read.jdbc(url, dbtable, props)
-    val dbcols   = extDF.columns.map(s => s.toUpperCase)
-    val hvDF     = spark.read.table(hvtable)
-    val hvcols   = hvDF.columns.map(s => s.toUpperCase)
+    val extDF   = spark.read.jdbc(url, dbtable, props)
+    val dbcols  = extDF.columns.map(s => s.toUpperCase)
+    val hvDF    = spark.read.table(hvtable)
+    val hvcols  = hvDF.columns.map(s => s.toUpperCase)
+    val dcols   = sumcols :+ dbkey
 
     print("\ndbtable: " + dbtable + " <")
     dbcols.foreach(s => print(s + ", "))
@@ -191,33 +197,43 @@ object DbValidate {
         case keypat(m1, m2) => (m1, m2)
       }
 
-      val sql   = pushdownQuery(extDF.schema(dbkey), keyval, addkey, dbtable, sumcols)
-      val dcols = sumcols :+ dbkey
-      println("  JDBC SQL QUERY: " + sql)
-
-      val dbdf  = spark.read.jdbc(url, sql, props).select(dcols.head, dcols.tail: _*)
+      // First JDBC Query with SELECT *
+      val sql   = pushdownQuery(extDF.schema(dbkey), "", "", dbtable, sumcols, "dbval")
+      val dbdf  = spark.read.jdbc(url, sql, props)
       val dbcnt = dbdf.count
-      val dbsum = dbdf.withColumn("SUM", sumcols.map(c => col(c)).reduce((c1,c2) => c1+c2).alias("SUMS")).limit(nrows)
+      dbdf.createTempView("extdataset")
 
-      val pqdf  = spark.read.parquet(path.toUri.toString).select(dcols.head, dcols.tail: _*)
+      // Second JDBC Query to perform sums
+      val sql2  = pushdownQuery(extDF.schema(dbkey), keyval, addkey, "extdataset", sumcols)
+      val dbsum = spark.sql(sql2)
+        .select(dcols.head, dcols.tail: _*)
+        .withColumn("SUM", sumcols.map(c => col(c)).reduce((c1,c2) => c1+c2).alias("SUMS"))
+        .limit(nrows)
+
+      // Read the parquet partition directly
+      val pqdf  = spark.read.parquet(path.toUri.toString)
       val pqcnt = pqdf.count
-      val pqsum = pqdf.withColumn("SUM", sumcols.map(c => col(c)).reduce((c1,c2) => c1+c2).alias("SUMS")).limit(nrows)
+      pqdf.createTempView("hivedataset")
 
-      //println(" sql query: " + sql)
-      println("\nPartition: " + keycol + "=" + keyval)
+      val sql3  = pushdownQuery(null, "", addkey, "hivedataset", sumcols)
+      val pqsum = spark.sql(sql3)
+        .select(sumcols.head, sumcols.tail: _*)
+        .withColumn("SUM", sumcols.map(c => col(c)).reduce((c1,c2) => c1+c2).alias("SUMS"))
+        .limit(nrows)
+
+      println(" JDBC Query 1: " + sql)
+      println(" JDBC QUERY 2: " + sql2)
+      println(" Hive QUERY 3: " + sql3)
+      println("\n Partition: " + keycol + "=" + keyval)
       println("External:  Count = " + dbcnt.toString)
       dbsum.show
       println("Parquet:  Count = " + pqcnt.toString)
       pqsum.show
-
     })
-
-    return
   }
 
 
   def main ( args: Array[String] ) : Unit = {
-
     val spark = SparkSession.builder()
       .appName("spark-hive-tools::DbValidate")
       .enableHiveSupport()

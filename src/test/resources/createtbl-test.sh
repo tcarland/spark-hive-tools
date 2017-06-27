@@ -1,11 +1,11 @@
 #!/bin/bash
 #
-#  Spark submit script for the HiveTableSwapper
+#  Spark submit script for the HiveCreateTblTest
 #
 
 
-APP_JAR="target/spark-hive-tools-test-0.1.6.jar"
-APP_CLASS="HiveCreateTest"
+APP_JAR="target/spark-hive-tools-test-0.1.7.jar"
+APP_CLASS="HiveCreateTblTest"
 
 
 spark-submit --master yarn \

@@ -35,7 +35,7 @@ object SHTTestInit {
     val url     = "jdbc:mysql://" + host + "/sht_test"
     val driver  = "com.mysql.jdbc.Driver"
     val dbtable = "sht_test.testdata1"
-    val hvtable = "default.testdata2"
+    val hvtable = "default.sht_testdata2"
 
     val schema = StructType(
       StructField("FLOWID", LongType, false) ::
