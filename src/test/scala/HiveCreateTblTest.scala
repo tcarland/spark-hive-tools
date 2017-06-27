@@ -9,12 +9,11 @@ import com.trace3.spark.hive.HiveFunctions
 import com.trace3.spark.ParquetValidate
 
 
-
-object HiveCreateTest {
+object HiveCreateTblTest {
 
   val suffix = s"_hivecreatetest"
 
-  val usage : String = """  ==>  Usage: HiveCreateTest [schema.tablename]""".stripMargin
+  val usage : String = """  ==>  Usage: HiveCreateTblTest [schema.tablename]""".stripMargin
 
 
   def main ( args: Array[String] ) : Unit = {
@@ -27,7 +26,7 @@ object HiveCreateTest {
 
     val spark = SparkSession
       .builder()
-      .appName("HiveCreateTest")
+      .appName("spark-hive-tools::HiveCreateTblTest")
       .enableHiveSupport()
       .getOrCreate
     import spark.implicits._
