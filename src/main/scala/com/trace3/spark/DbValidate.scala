@@ -204,7 +204,7 @@ object DbValidate {
       val sql   = pushdownQuery(extDF.schema(dbkey), "", "", dbtable, sumcols, "dbval")
       val dbdf  = spark.read.jdbc(url, sql, props)
       val dbcnt = dbdf.count
-      dbdf.createTempView("extdataset")
+      dbdf.createOrReplaceTempView("extdataset")
 
       // Second JDBC Query to perform sums
       val sql2  = pushdownQuery(extDF.schema(dbkey), "", addkey, "extdataset", sumcols)
@@ -216,7 +216,7 @@ object DbValidate {
       // Read the parquet partition directly
       val pqdf  = spark.read.parquet(path.toUri.toString)
       val pqcnt = pqdf.count
-      pqdf.createTempView("hivedataset")
+      pqdf.createOrReplaceTempView("hivedataset")
 
       val sql3  = pushdownQuery(null, "", addkey, "hivedataset", sumcols)
       val pqsum = spark.sql(sql3)
