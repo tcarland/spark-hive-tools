@@ -85,13 +85,14 @@ object DbValidate {
                       table:  String,
                       cols:   Array[String],
                       alias:  String = "" ) : String = {
-    var sql = "(SELECT " + key.name
+    var sql = ""
 
     if ( key == null || keyval.isEmpty ) {
       sql = "(SELECT * FROM " + table
       if ( ! addkey.isEmpty )
         sql += " WHERE " + addkey
-    } else {
+    } else if ( key != null ) {
+      sql = "(SELECT " + key.name
       if ( ! cols.isEmpty )
         cols.foreach(str => sql += (", " + str))
       sql += (" FROM " + table + " WHERE " + key.name + " = ")
@@ -112,7 +113,9 @@ object DbValidate {
       if ( ! addkey.isEmpty )
         sql += " AND " + addkey
     }
-    sql += ") " + alias
+
+    if ( ! sql.isEmpty )
+      sql += ") " + alias
 
     sql
   }
@@ -204,7 +207,7 @@ object DbValidate {
       dbdf.createTempView("extdataset")
 
       // Second JDBC Query to perform sums
-      val sql2  = pushdownQuery(extDF.schema(dbkey), keyval, addkey, "extdataset", sumcols)
+      val sql2  = pushdownQuery(extDF.schema(dbkey), "", addkey, "extdataset", sumcols)
       val dbsum = spark.sql(sql2)
         .select(dcols.head, dcols.tail: _*)
         .withColumn("SUM", sumcols.map(c => col(c)).reduce((c1,c2) => c1+c2).alias("SUMS"))
