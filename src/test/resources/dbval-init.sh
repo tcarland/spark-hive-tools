@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-#  Spark submit script for the HiveTableSwapper
+#  Spark submit script for initializing test data
 #
 
 

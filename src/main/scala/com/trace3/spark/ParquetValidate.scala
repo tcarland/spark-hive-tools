@@ -15,7 +15,7 @@ import hive.HiveFunctions
   *
   * Compares partition schemas and reports on which partitions
   * are missing which columns.
-  */
+ **/
 object ParquetValidate {
 
 
