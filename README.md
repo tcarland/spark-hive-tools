@@ -10,7 +10,7 @@ Hive tables.
 
  * HiveTableSwapper - Move tables with an optional re-partition.
  * ParquetValidate  - Compare schemas across parquet partitions (ie. schema evolution).
- * DBValidate       - Compare counts and schema of a hive table to an external jdbc database.
+ * DBValidate       - Compare schema of a hive table to an external jdbc database.
 
 ##### HiveTableSwapper
 
