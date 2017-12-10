@@ -22,7 +22,7 @@ import hive.HiveFunctions
 /**  DbValidate : Attempts to compare an external database to a parquet|hive table
   *  by comparing the column names and optionally run a SUM(col1, col2, ..)
   *  function on '--num-rows', per partition for '--num-partitions'
-  */
+ **/
 object DbValidate {
 
   type OptMap  = Map[String, String]
@@ -123,9 +123,9 @@ object DbValidate {
 
   /** Validate an external db table with a Hive/Parquet table.
     *
-    * @param spark   The SparkSession context.
-    * @param optMap  A Map of configuration parameters.
-    * @param optList A list of command switches.
+    * @param spark    The SparkSession context.
+    * @param optMap   A Map of configuration parameters.
+    * @param optList  A list of command switches.
     */
   def validate ( spark: SparkSession, optMap: OptMap, optList: OptList ) : Unit = {
     val url     = optMap.getOrElse("jdbc", "")
@@ -178,7 +178,7 @@ object DbValidate {
     println(">")
 
     if ( sumcols.length <= 1 ) {
-      println("No columns provided. Exiting early")
+      println("No SUM columns provided. Exiting early")
       return
     }
 

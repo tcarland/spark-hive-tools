@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+#
+#  Runs a DBValidate test to compare a parquet table to
+#  a mysql table
+#
 
 DBVALIDATE="bin/dbvalidate.sh"
 host="$1"

@@ -1,4 +1,9 @@
+/** ParquetValidate.scala
+  *
+  * @author Timothy C. Arland <tarland@trace3.com, tcarland@gmail.com>
+ **/
 package com.trace3.spark
+
 
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql._
@@ -9,17 +14,17 @@ import scala.util.matching.Regex
 import hive.HiveFunctions
 
 
-/**
-  *   The HiveTableSwapper is intended to move an existing Hive table to a new table with
-  *   an optional repartition included.  This can be used to swap a new table in place
-  *   of an old table and/or allowing for a table repartition (using Spark's default 
-  *   HashPartitioner).
-  *   Tables imported via sqoop with the 'split-by' option on a non-sequential
-  *   column will result in unbalanced partitions, so this tool can be useful for such
-  *   occasions.
+/**  The HiveTableSwapper is intended to move an existing Hive table to a new table with
+  *  an optional repartition included.  This can be used to swap a new table in place
+  *  of an old table and/or allowing for a table repartition using Spark's default
+  *  HashPartitioner.
+  *
+  *  Tables imported via sqoop with the 'split-by' option on a non-sequential
+  *  column will result in unbalanced partitions, so this tool can be useful for such
+  *  occasions.
   *
   * Created by tcarland@gmail.com on 11/17/16
-  */
+ **/
 object HiveTableSwapper {
 
 
@@ -29,45 +34,50 @@ object HiveTableSwapper {
   val usage : String =
     """
       |==>  Usage: HiveTableSwapper <srcTable> <dstTable> [n_partitions] [partition_by]
-      |==>      srcTable      =  Source Hive Table to Alter
-      |==>      dstTable      =  Name of the new table
-      |                          (Note any existing table by this name is DROPPED!)
-      |==>      n_partitions  =  Optional number of partitions for the new table.
-      |==>      partition_by  =  Optional name of the column to repartition by.
+      |==>     srcTable      =  Source Hive Table to Alter
+      |==>     dstTable      =  Name of the new table
+      |                         (Note any existing table by this name is DROPPED!)
+      |==>     n_partitions  =  Optional number of partitions for the new table.
+      |==>     partition_by  =  Optional name of the column to repartition by.
     """.stripMargin
 
 
 
-def SwapTable ( spark: SparkSession, src: String, dst: String, np: Int, col: String ) : Unit = {
-    var srctbl = src
-    var srcdf  = spark.read.table(src)
+  def SwapTable ( spark: SparkSession,
+                  srcTable: String,
+                  dstTable: String,
+                  np: Int,
+                  col: String ) : Unit =
+  {
+    var srctbl = srcTable
+    var srcdf  = spark.read.table(srcTable)
     val curnp  = srcdf.rdd.partitions.size
 
-    // IF a repartition is needed, we create a temp table to write to
+    // IF a repartition is needed, we use a temp table
     if ( np > 0 && curnp != np ) {
       if ( col != null )   // repartition
         srcdf = srcdf.repartition(np, srcdf(col))
       else
         srcdf = srcdf.repartition(np)
 
-      val srcsql = HiveFunctions.GetCreateTableString(spark, src)
-      val tmptbl = src + tableSuffix
+      val srcsql = HiveFunctions.GetCreateTableString(spark, srcTable)
+      val tmptbl = srcTable + tableSuffix
       val tmpsql = HiveFunctions.CopyTableCreate(srcsql, tmptbl)
 
       // create the temp table, insert, and remap the source table
       spark.sql(tmpsql)
       srcdf.write.format("parquet").insertInto(tmptbl)
-      spark.sql("DROP TABLE " + src)
+      spark.sql("DROP TABLE " + srcTable)
       srctbl = tmptbl
     }
 
     try {
-      spark.sql("DROP TABLE IF EXISTS " + dst)
+      spark.sql("DROP TABLE IF EXISTS " + dstTable)
     } catch {
       case _ : Throwable => 
     }
 
-    spark.sql("ALTER TABLE " + srctbl + " RENAME TO " + dst)
+    spark.sql("ALTER TABLE " + srctbl + " RENAME TO " + dstTable)
   }
 
 
@@ -93,7 +103,6 @@ def SwapTable ( spark: SparkSession, src: String, dst: String, np: Int, col: Str
       .appName("spark-hive-tools::HiveTableSwapper")
       .enableHiveSupport()
       .getOrCreate
-    import spark.implicits._
 
     spark.sparkContext.setLogLevel("WARN")
     spark.sqlContext.setConf("spark.sql.hive.convertMetastoreParquet", "false")

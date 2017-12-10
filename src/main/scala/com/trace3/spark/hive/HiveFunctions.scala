@@ -8,13 +8,11 @@ package com.trace3.spark.hive
 import org.apache.spark.sql.SparkSession
 
 
-// note: some of these are a little ugly and special case
-// early impl needs continued and improved abstraction
 
 /** HiveFunctions
   *
-  * A collection of functions for interacting with Hive and underlying Parquet tables.
-  *
+  * A collection of functions for interacting with Hive and underlying
+  * Parquet tables.
  **/
 object HiveFunctions {
 

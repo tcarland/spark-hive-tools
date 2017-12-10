@@ -1,10 +1,10 @@
 #!/bin/bash
 #
-#  Spark submit script for the HiveTableSwapper
+#  Spark submit script for initializing test data
 #
 
 
-APP_JAR="target/spark-hive-tools-test-0.1.7.jar"
+APP_JAR="target/spark-hive-tools-test-0.1.8.jar"
 APP_CLASS="SHTTestInit"
 
 
