@@ -4,36 +4,37 @@ spark-hive-tools
 
 ##### Overview
 
-  Provides convenient Scala functions for interacting or performing common operations on 
-Hive tables.
-
+Provides convenient Scala functions for interacting or performing common operations 
+on Hive tables.
 
  * HiveTableSwapper - Move tables with an optional re-partition.
  * ParquetValidate  - Compare schemas across parquet partitions (ie. schema evolution).
  * DBValidate       - Compare schema of a hive table to an external jdbc database.
+
 
 ##### HiveTableSwapper
 
 A tool intended for the post-injestion process of moving a new table into place of an 
 existing table; optionally allowing for a table repartition in the process.
 
-More specifically, occasionally in certain large scale RDMS environments, the odd schema 
-design may lack a column to split-by or that can be relied on for running incremental 
-exports.  In case where a given table is not so large, it can be relatively cheap enough 
-to ingest the entire table and then swap the table in place.  
+More specifically, in some large scale RDMS environments, the occasional schema 
+design may lack an obvious column to split-by or a column that can be relied on for 
+running incremental exports.  In the case where a given table is not so large, it can 
+be relatively cheap enough to ingest the entire table and then swap the table in place.  
  
-  Sqoop also has the issue of partitioning in this situation.  Without a column that 
-can be used for ranged queries, the resulting import ends up with unbalanced partitions. 
-This tool allows for the optional repartitioning of a table via Spark (using it's 
-HashedPartitioner) that will redistribute the partitions more evenly.
+Sqoop also has the issue of partitioning with split columns that are not split 
+equally.  Without a column that can be used for ranged queries, the resulting import 
+ends up with unbalanced partitions. This tool allows for the optional re-partitioning 
+of a table via Spark (using it's HashedPartitioner) that will redistribute the 
+partitions more evenly.
 
-  This may be a specific use case, but this also serves as a good example of some basic 
-Hive interactions from spark additionally demonstrating a workaround to the compatability 
-issues between Spark, Hive and Parquet. Spark uses a custom column 'SerDe' when writing 
-parquet which results in tables being unusable from Hive or Impala. Notably, any use 
-of .saveAsTable() including APPEND mode will rewrite the metadata. To avoid this one 
-first runs CREATE TABLE via Hive and then uses DataSet.insertInto() versus 
-DataSet.saveAsTable().
+This is a somewhat limited or specific use case, but also serves as a good example of 
+some basic Hive interactions from spark additionally demonstrating a workaround to the 
+compatability issues between Spark, Hive and Parquet. Spark uses a custom column 'SerDe' 
+when writing parquet which results in tables being unusable from Hive or Impala. 
+Notably, any use of .saveAsTable() including APPEND mode will rewrite the metadata. To 
+avoid this one first runs CREATE TABLE via Hive and then uses DataSet.insertInto() 
+versus DataSet.saveAsTable().
 
  - NOTE: Renaming a Table via ALTER TABLE is only cheap if the table is not moving 
 databases. It is best to not use a different schema/db name between the source and 
@@ -68,7 +69,6 @@ r=$?
 
 return $r
 ``` 
-
 
 <!--
  * Repartitioner 

@@ -18,7 +18,7 @@ object HiveFunctions {
 
 
   /** Given a fully qualified table name (ie. schema.table),
-    * return the schema name only (minus the table name).
+    * returns the schema name only (minus the table name).
    **/
   def GetDBName ( fqtn: String ) : String = {
     val pat = """(\S+)\.\S+""".r
