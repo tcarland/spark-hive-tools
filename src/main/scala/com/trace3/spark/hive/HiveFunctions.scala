@@ -8,7 +8,6 @@ package com.trace3.spark.hive
 import org.apache.spark.sql.SparkSession
 
 
-
 /** HiveFunctions
   *
   * A collection of functions for interacting with Hive and underlying
@@ -16,9 +15,8 @@ import org.apache.spark.sql.SparkSession
  **/
 object HiveFunctions {
 
-
   /** Given a fully qualified table name (ie. schema.table),
-    * return the schema name only (minus the table name).
+    * returns the schema name only (minus the table name).
    **/
   def GetDBName ( fqtn: String ) : String = {
     val pat = """(\S+)\.\S+""".r
