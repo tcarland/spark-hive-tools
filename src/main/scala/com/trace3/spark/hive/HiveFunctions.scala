@@ -40,7 +40,7 @@ object HiveFunctions {
 
 
   /**  Returns a normalized string (no newlines) representing the Hive
-    * CREATE TABLE statement.
+    * CREATE TABLE statement for a given table name.
     *
     * @param spark   A SparkSession context.
     * @param table   A qualified table name
@@ -53,6 +53,26 @@ object HiveFunctions {
       .replaceAll("\n", " ")
       .replaceAll("  ", " ")
     createstr
+  }
+
+
+  /** Return an array of tuples consisting of the table name and the
+    * corresponding SHOW CREATE TABLE statement for a given database.
+   **/
+  def GetTableCreates ( spark: SparkSession, dbname: String ) : Array[(String, String)] = {
+    import spark.implicits._
+    val locations = spark.catalog.listTables(dbname).collect
+      .map( table => {
+        val createStr = spark.sql("SHOW CREATE TABLE " +
+          table.database + "." + table.name)
+          .select($"createtab_stmt").collect
+          .apply(0)
+          .getString(0)
+          .replaceAll("\n", " ")
+          .replaceAll("  ", " ")
+        ( table.name, createStr )
+      })
+    locations
   }
 
 
@@ -75,7 +95,8 @@ object HiveFunctions {
       path = HiveFunctions.GetTableLocationString(crstr)
 
       if ( path.isEmpty ) {
-        path = spark.conf.getOption("hive.metastore.warehouse.dir").getOrElse("/user/hive/warehouse")
+        path = spark.conf.getOption("hive.metastore.warehouse.dir")
+          .getOrElse("/user/hive/warehouse")
 
         if ( table.contains(".") ) {
           val dbname = HiveFunctions.GetDBName(table)
@@ -158,7 +179,7 @@ object HiveFunctions {
 
 
   /** Generates a new CREATE TABLE sql statement from the provided
-    * CREATE TABLE sql string with a new table name. This essentially copies 
+    * CREATE TABLE sql string with a new table name. This essentially copies
     * the table schema from a current table. This intentionally does not
     * include 'TBLPROPERTIES' for compatibility reasons and instead lets it
     * be regenerated at CREATE.

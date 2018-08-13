@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<project 
-  xmlns="http://maven.apache.org/POM/4.0.0" 
+<project
+  xmlns="http://maven.apache.org/POM/4.0.0"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
@@ -25,12 +25,12 @@
 
   <properties>
       <encoding>UTF-8</encoding>
-      <hadoop.version>2.7.1</hadoop.version>
-      <hbase.version>1.1.1</hbase.version>
+      <hadoop.version>2.7.4</hadoop.version>
+      <hbase.version>1.1.5</hbase.version>
       <hive.version>1.2.1</hive.version>
       <scala.version>2.11.8</scala.version>
       <scala.tools.version>2.11</scala.tools.version>
-      <spark.version>2.1.0</spark.version>
+      <spark.version>2.3.1</spark.version>
   </properties>
 
   <dependencies>
@@ -135,4 +135,3 @@
   </build>
 
 </project>
-
