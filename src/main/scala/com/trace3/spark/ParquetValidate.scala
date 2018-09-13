@@ -29,7 +29,7 @@ object ParquetValidate {
   /** Validate the partition schema versus the table schema for
     * a given parquet table.
    **/
-  def validate ( spark: SparkSession, table: String ) : Unit = {
+  def Validate ( spark: SparkSession, table: String ) : Unit = {
     val keypat  = """(.*)=.*""".r
     val pathstr = HiveFunctions.GetTableURI(spark, table)
 
@@ -91,7 +91,7 @@ object ParquetValidate {
       .getOrCreate
     spark.sparkContext.setLogLevel("WARN")
 
-    ParquetValidate.validate(spark, table)
+    ParquetValidate.Validate(spark, table)
 
     println(" => Finished.")
     spark.stop

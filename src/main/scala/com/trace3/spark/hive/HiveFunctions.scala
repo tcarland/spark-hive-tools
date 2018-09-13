@@ -57,9 +57,9 @@ object HiveFunctions {
 
 
   /** Return an array of tuples consisting of the table name and the
-    * corresponding SHOW CREATE TABLE statement for a given database.
+    * corresponding SHOW CREATE TABLE statement for the given database..
    **/
-  def GetTableCreates ( spark: SparkSession, dbname: String ) : Array[(String, String)] = {
+  def GetCreateTableStrings ( spark: SparkSession, dbname: String ) : Array[(String, String)] = {
     import spark.implicits._
     val locations = spark.catalog.listTables(dbname).collect
       .map( table => {
