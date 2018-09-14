@@ -97,7 +97,7 @@ object HiveFunctions {
     } else {
       val crstr = HiveFunctions.GetCreateTableString(spark, table)
 
-      path = HiveFunctions.GetTableLocationString(crstr)
+      path = HiveFunctions.GetTableLocationURI(crstr)
 
       if ( path.isEmpty ) {
         path = spark.conf.getOption("hive.metastore.warehouse.dir")
