@@ -15,8 +15,8 @@ import org.apache.spark.sql.SparkSession
  **/
 object HiveFunctions {
 
-  /** Given a fully qualified table name (ie. schema.table),
-    * returns the schema name only (minus the table name).
+  /** Given a fully qualified table name, ie. 'schema.table',
+    * returns the schema name only (w/o the table name).
    **/
   def GetDBName ( fqtn: String ) : String = {
     val pat = """(\S+)\.\S+""".r
@@ -28,7 +28,7 @@ object HiveFunctions {
 
 
   /** Given a fully qualified table name, ie. 'schema.table',
-    * return the table name only (minus the schema name).
+    * return the table name only (w/o the schema name).
    **/
   def GetTableName ( fqtn: String ) : String = {
     val pat = """\S+\.(\S+)""".r
@@ -39,7 +39,7 @@ object HiveFunctions {
   }
 
 
-  /**  Returns a normalized string (no newlines) representing the Hive
+  /** Returns a normalized string (no newlines) representing the Hive
     * CREATE TABLE statement for a given table name.
     *
     * @param spark   A SparkSession context.
@@ -144,7 +144,7 @@ object HiveFunctions {
     * @param createStr  The Hive CREATE TABLE string
     * @return           The LOCATION target string
     */
-  def GetTableLocationString ( createStr: String ) : String = {
+  def GetTableLocationURI ( createStr: String ) : String = {
     val pat  = """CREATE .*TABLE.*LOCATION\s+'(.+)' TBL.*""".r
 
     if ( createStr.contains("LOCATION") ) {
