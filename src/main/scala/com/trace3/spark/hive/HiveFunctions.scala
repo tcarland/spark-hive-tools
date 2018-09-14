@@ -57,7 +57,12 @@ object HiveFunctions {
 
 
   /** Return an array of tuples consisting of the table name and the
-    * corresponding SHOW CREATE TABLE statement for the given database..
+    * corresponding SHOW CREATE TABLE statement for the tables in the
+    * given database..
+    *
+    *  @param spark   The SparkSession context.
+    *  @param dbname  The name of the database or schema to capture.
+    *  @return        A string tuple of table name to create_statement
    **/
   def GetCreateTableStrings ( spark: SparkSession, dbname: String ) : Array[(String, String)] = {
     import spark.implicits._
