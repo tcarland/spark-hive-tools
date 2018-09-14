@@ -81,7 +81,7 @@ object HiveFunctions {
   }
 
 
-  /** Determines the Location URI from a given table name if the string
+  /** Determines the Location URI for a given table name if the string
     * provided is not already a valid HDFS path.
     *
     * @param spark  A SparkSession context.

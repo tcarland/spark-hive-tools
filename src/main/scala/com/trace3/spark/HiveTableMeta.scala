@@ -23,39 +23,37 @@ object HiveTableMeta {
     """
       | ==>  Usage: HiveTableMeta <dbname> <filename>
       | ==>      dbname    = Name of schema or database to dump.
-      | ==>     filename   = Name of output file of results.
+      | ==>     filename   = Name of output file of create statements.
     """.stripMargin
 
 
-  def GetTableMeta ( spark: SparkSession, dbname: String, outFile: String ) : Unit = {
-      val tmpOut    = outFile + "-tmpout"
-      val hconf     = spark.sparkContext.hadoopConfiguration
-      val hdfs      = FileSystem.get(hconf)
+  def SaveTableMeta ( spark: SparkSession, dbname: String, outFile: String ) : Unit = {
+    val tmpOut    = outFile + "-tmpout"
+    val hconf     = spark.sparkContext.hadoopConfiguration
+    val hdfs      = FileSystem.get(hconf)
 
-      import spark.implicits._
+    import spark.implicits._
 
-      if ( hdfs.exists(new Path(outFile)) ) {
-          System.err.println("Fatal Error: Output path already exists")
-          System.exit(1)
-      }
+    if ( hdfs.exists(new Path(outFile)) ) {
+      System.err.println("Fatal Error: Output path already exists")
+      System.exit(1)
+    }
 
-      if ( hdfs.exists(new Path(tmpOut)) ) {
-          System.err.println("Fatal Error: Temp output already exists: " + tmpOut)
-          System.exit(1)
-      }
+    if ( hdfs.exists(new Path(tmpOut)) ) {
+      System.err.println("Fatal Error: Temp output already exists: " + tmpOut)
+      System.exit(1)
+    }
 
-      val meta = HiveFunctions.GetCreateTableStrings(spark, dbname)
+    val meta = HiveFunctions.GetCreateTableStrings(spark, dbname)
 
-      meta.toSeq.toDF.write.csv(tmpOut)
+    meta.toSeq.toDF.write.csv(tmpOut)
 
-      if ( FileUtil.copyMerge(hdfs, new Path(tmpOut),
-                              hdfs, new Path(outFile),
-                              false, hconf, null) )
-      {
-        hdfs.delete(new Path(tmpOut), true)
-      }
-
-      return
+    if ( FileUtil.copyMerge(hdfs, new Path(tmpOut),
+                            hdfs, new Path(outFile),
+                            false, hconf, null) )
+    {
+      hdfs.delete(new Path(tmpOut), true)
+    }
   }
 
 
@@ -70,12 +68,12 @@ object HiveTableMeta {
 
     val spark = SparkSession
       .builder()
-      .appName("spark-hive-tools::ParquetValidate")
+      .appName("spark-hive-tools::HiveTableMeta")
       .enableHiveSupport()
       .getOrCreate
     spark.sparkContext.setLogLevel("WARN")
 
-    HiveTableMeta.GetTableMeta(spark, table, output)
+    HiveTableMeta.SaveTableMeta(spark, table, output)
 
     println(" => Finished.")
     spark.stop
