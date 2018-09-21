@@ -4,46 +4,47 @@ spark-hive-tools
 
 ##### Overview
 
-Provides convenient Scala functions for interacting or performing common operations 
+Provides convenient Scala functions for interacting or performing common operations
 on Hive tables.
 
  * HiveTableSwapper - Move tables with an optional re-partition.
  * ParquetValidate  - Compare schemas across parquet partitions (ie. schema evolution).
  * DBValidate       - Compare schema of a hive table to an external jdbc database.
+ * HiveTableMeta    - Create a file of table meta statements for a given database.
 
 
 ##### HiveTableSwapper
 
-A tool intended for the post-injestion process of moving a new table into place of 
+A tool intended for the post-injestion process of moving a new table into place of
 an existing table; optionally allowing for a table repartition in the process.
 
-More specifically, in some RDMS environments, a given schema design may lack an 
-obvious column to split-by or a column that can be relied on for running incremental 
-exports.  In the case where a given table is not so large, it can be relatively 
+More specifically, in some RDMS environments, a given schema design may lack an
+obvious column to split-by or a column that can be relied on for running incremental
+exports.  In the case where a given table is not so large, it can be relatively
 cheap enough to ingest the entire table and then swap the table in place.  
- 
-Sqoop also has the issue of partitioning with split columns that are not split 
-equally.  Without a column that can be used for ranged queries, the resulting import 
+
+Sqoop also has the issue of partitioning with split columns that are not split
+equally.  Without a column that can be used for ranged queries, the resulting import
 ends up with unbalanced partitions. This tool allows for the optional re-
-partitioning of a table via Spark (using it's HashedPartitioner) that will 
+partitioning of a table via Spark (using it's HashedPartitioner) that will
 redistribute the partitions more evenly.
 
-This is a somewhat limited or specific use case, but also serves as a good example 
-of some basic Hive interactions from spark additionally demonstrating a workaround 
-to the compatability issues between Spark, Hive and Parquet. Spark uses a custom 
-column 'SerDe' when writing parquet which results in tables being unusable from 
-Hive or Impala.  Notably, any use of .saveAsTable() including APPEND mode will 
-rewrite the metadata. To avoid this one first runs CREATE TABLE via Hive and then 
+This is a somewhat limited or specific use case, but also serves as a good example
+of some basic Hive interactions from spark additionally demonstrating a workaround
+to the compatability issues between Spark, Hive and Parquet. Spark uses a custom
+column 'SerDe' when writing parquet which results in tables being unusable from
+Hive or Impala.  Notably, any use of .saveAsTable() including APPEND mode will
+rewrite the metadata. To avoid this one first runs CREATE TABLE via Hive and then
 uses DataSet.insertInto() versus DataSet.saveAsTable().
 
- - NOTE: Renaming a Table via ALTER TABLE is only cheap if the table is not moving 
-databases. It is best to not use a different schema/db name between the source and 
-destination tables, as the RENAME operation may result in a full copy. 
-HiveTableSwapper in fact assumes this to be true and only modifies the Hive physical 
-LOCATION to account for the new table name in the path, not the db. If different 
+ - NOTE: Renaming a Table via ALTER TABLE is only cheap if the table is not moving
+databases. It is best to not use a different schema/db name between the source and
+destination tables, as the RENAME operation may result in a full copy.
+HiveTableSwapper in fact assumes this to be true and only modifies the Hive physical
+LOCATION to account for the new table name in the path, not the db. If different
 databases were used, the table would be in the wrong location.
- 
- - NOTE: The repartitioning step rewrites the source table via Spark into a 
+
+ - NOTE: The repartitioning step rewrites the source table via Spark into a
  temporary table that is then renamed to the destination.
 
  - Sqoop example:
@@ -61,33 +62,33 @@ fi
 
 sqoop import --connect jdbc:oracle:thin:@orapita-db:1521/dev_name_con -m 8 \
  --table=PBX.GET_LIMIT_V --as-parquetfile --compression-codec=snappy \
- --split-by=ACCT_NO --hive-import --hive-database=PBX 
- --hive-table=PBX.GET_LIMIT_VTMP 
+ --split-by=ACCT_NO --hive-import --hive-database=PBX
+ --hive-table=PBX.GET_LIMIT_VTMP
  --username $DBUSER --password-file $DBPASSFILE
 
 r=$?
 
 return $r
-``` 
+```
 
 <!--
- * Repartitioner 
---> 
+ * Repartitioner
+-->
 
 ##### ParquetValidate
- 
- Iterates on a Parquet Table's Partitions and reports on missing columns (usually 
+
+ Iterates on a Parquet Table's Partitions and reports on missing columns (usually
 as a result of schema evolution).
 
 
 ##### DBValidate
 
-Compares the columns of an external database table (via JDBC) to a given Hive Table 
+Compares the columns of an external database table (via JDBC) to a given Hive Table
 with the option of comparing column values by running a sum of n cols aross y rows.
 
 **Testing**
 
-The test for DBValidate uses a mysql instance to run the comparison. The 
+The test for DBValidate uses a mysql instance to run the comparison. The
 following will seed the test data in both MySQL and Hive for running the test app.
 
 ```
@@ -97,8 +98,8 @@ following will seed the test data in both MySQL and Hive for running the test ap
   $ ./src/test/resources/dbval-init.sh mysqlhost:port  
 ```
 
-To build the jar for testing, first compile via ***mvn package*** followed by 
-running the script **src/test/resources/build-test-jar.sh** Run the dbval-test.sh 
+To build the jar for testing, first compile via ***mvn package*** followed by
+running the script **src/test/resources/build-test-jar.sh** Run the dbval-test.sh
 script providing the hostname of the external mysql server to run the test.
 
 ```
@@ -107,4 +108,11 @@ script providing the hostname of the external mysql server to run the test.
 
   * Note that scripts should be run relative to the project root directory.
 
+##### HiveTableMeta
 
+Creates a key,value file of table name to db create table statement. This can be
+useful to create a backup of the table metadata. The resulting file can be used
+to recreate table metadata in a different environment. This can especially apply
+to cloud environments, for instance, in Azure, using adls endpoints for external
+tables likely need their endpoint hdfs location modified when tables are copied
+elsewhere (CDH BDR(distcp) does not support ADLS).
