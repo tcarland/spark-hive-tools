@@ -3,7 +3,7 @@
 #  Spark submit script for the ParquetValidate
 #
 
-APP_JAR="target/spark-hive-tools-0.1.8-jar-with-dependencies.jar"
+APP_JAR="target/spark-hive-tools-0.1.9-jar-with-dependencies.jar"
 APP_CLASS="com.trace3.spark.ParquetValidate"
 
 spark-submit --master yarn \
