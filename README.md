@@ -110,9 +110,11 @@ script providing the hostname of the external mysql server to run the test.
 
 ##### HiveTableMeta
 
-Creates a key,value file of table name to db create table statement. This can be
-useful to create a backup of the table metadata. The resulting file can be used
-to recreate table metadata in a different environment. This can especially apply
-to cloud environments, for instance, in Azure, using adls endpoints for external
-tables likely need their endpoint hdfs location modified when tables are copied
-elsewhere (CDH BDR(distcp) does not support ADLS).
+Creates a key/value file of *table_name* to the db *create table* statement. This 
+can be useful to create a backup of the table metadata. The resulting file can be 
+used to recreate table metadata in a different environment. This can especially 
+apply to cloud environments, for instance, in Azure, using adls endpoints for 
+external tables likely need their endpoint hdfs location modified when tables are 
+copied elsewhere (eg. CDH BDR(distcp) does not support ADLS source/target).
+
+

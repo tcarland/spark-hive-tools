@@ -3,7 +3,7 @@
 # spark-submit for HiveTableMeta
 
 
-APP_JAR="target/spark-hive-tools-0.1.8-jar-with-dependencies.jar"
+APP_JAR="target/spark-hive-tools-0.1.9-jar-with-dependencies.jar"
 APP_CLASS="com.trace3.spark.HiveTableMeta"
 
 spark-submit --master yarn \

@@ -63,7 +63,7 @@ object HiveTableMeta {
       System.exit(1)
     }
 
-    val table  = args(0)
+    val dbname = args(0)
     val output = args(1)
 
     val spark = SparkSession
@@ -73,7 +73,7 @@ object HiveTableMeta {
       .getOrCreate
     spark.sparkContext.setLogLevel("WARN")
 
-    HiveTableMeta.SaveTableMeta(spark, table, output)
+    HiveTableMeta.SaveTableMeta(spark, dbname, output)
 
     println(" => Finished.")
     spark.stop
