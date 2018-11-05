@@ -67,8 +67,7 @@ object HiveTableMeta {
       StructField("STMT", StringType, true) :: Nil
     )
 
-    spark.read
-      .schema(schema)
+    spark.read.schema(schema)
       .csv(inFile)
       .collect
       .foreach( row => spark.sql(row(1).toString) )

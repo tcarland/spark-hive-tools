@@ -23,32 +23,31 @@ obvious column to split-by or a column that can be relied on for running increme
 exports.  In the case where a given table is not so large, it can be relatively
 cheap enough to ingest the entire table and then swap the table in place.  
 
-Sqoop also has the issue of partitioning with split columns that are not split
-equally.  Without a column that can be used for ranged queries, the resulting import
-ends up with unbalanced partitions. This tool allows for the optional re-
-partitioning of a table via Spark (using it's HashedPartitioner) that will
+Sqoop also has the issue of partitioning with split columns that are not evenly
+distributed. Without a column that can be used for ranged queries, the resulting
+sqoop import ends up with unbalanced partitions. This tool allows for an optional
+re-partition of a table via Spark, using its *HashedPartitioner*, that will
 redistribute the partitions more evenly.
 
 This is a somewhat limited or specific use case, but also serves as a good example
-of some basic Hive interactions from spark additionally demonstrating a workaround
-to the compatability issues between Spark, Hive and Parquet. Spark uses a custom
-column 'SerDe' when writing parquet which results in tables being unusable from
-Hive or Impala.  Notably, any use of .saveAsTable() including APPEND mode will
-rewrite the metadata. To avoid this one first runs CREATE TABLE via Hive and then
-uses DataSet.insertInto() versus DataSet.saveAsTable().
+of some basic Hive interactions from Spark. Spark uses a custom column 'SerDe'
+when writing parquet which can result in tables being unusable from Hive or
+Impala.  Notably, any use of .saveAsTable() including APPEND mode will rewrite
+the metadata. To avoid this, we first run CREATE TABLE via Hive and then
+use DataSet.insertInto() versus DataSet.saveAsTable().
 
  - NOTE: Renaming a Table via ALTER TABLE is only cheap if the table is not moving
-databases. It is best to not use a different schema/db name between the source and
+databases. It is best to *not* use a different schema/db name between the source and
 destination tables, as the RENAME operation may result in a full copy.
-HiveTableSwapper in fact assumes this to be true and only modifies the Hive physical
-LOCATION to account for the new table name in the path, not the db. If different
-databases were used, the table would be in the wrong location.
+HiveTableSwapper, in fact, assumes this to be true and only modifies the Hive
+physical LOCATION to account for the new table name, but does not consider the
+dbname within the location. If different databases were used with this, the table
+would end up in the wrong HDFS location.
 
  - NOTE: The repartitioning step rewrites the source table via Spark into a
  temporary table that is then renamed to the destination.
 
- - Sqoop example:
-
+Sqoop example:
 ```
 #!/bin/bash
 
@@ -77,8 +76,8 @@ return $r
 
 ##### ParquetValidate
 
- Iterates on a Parquet Table's Partitions and reports on missing columns (usually
-as a result of schema evolution).
+ Iterates on a Parquet Table's Partitions and reports on any missing columns, usually
+a result of schema evolution feature in Parquet.
 
 
 ##### DBValidate
@@ -86,9 +85,9 @@ as a result of schema evolution).
 Compares the columns of an external database table (via JDBC) to a given Hive Table
 with the option of comparing column values by running a sum of n cols aross y rows.
 
-**Testing**
+*Testing*
 
-The test for DBValidate uses a mysql instance to run the comparison. The
+The test for DBValidate uses a Mysql instance to run the comparison. The
 following will seed the test data in both MySQL and Hive for running the test app.
 
 ```
@@ -99,22 +98,21 @@ following will seed the test data in both MySQL and Hive for running the test ap
 ```
 
 To build the jar for testing, first compile via ***mvn package*** followed by
-running the script **src/test/resources/build-test-jar.sh** Run the dbval-test.sh
-script providing the hostname of the external mysql server to run the test.
-
+running the script **src/test/resources/build-test-jar.sh**
+Run the *dbval-test.sh* script providing the hostname of the mysql server to
+run the test.
 ```
   ./bin/dbval-test.sh mydbhost:3306
 ```
 
-  * Note that scripts should be run relative to the project root directory.
+* Note that scripts should be run relative to the project root directory.
+
 
 ##### HiveTableMeta
 
-Creates a key/value file of *table_name* to the db *create table* statement. This 
-can be useful to create a backup of the table metadata. The resulting file can be 
-used to recreate table metadata in a different environment. This can especially 
-apply to cloud environments, for instance, in Azure, using adls endpoints for 
-external tables likely need their endpoint hdfs location modified when tables are 
-copied elsewhere (eg. CDH BDR(distcp) does not support ADLS source/target).
-
-
+Creates a key/value file of *table_name* to the db *create table* statement. This
+can be useful to create a backup of the table metadata. The resulting file can be
+used to recreate table metadata in a different environment. This can be useful
+for cloud environments, for instance, in Azure, using ADLS endpoints for
+external tables would need their endpoint HDFS locations modified when tables are
+copied elsewhere. Note that CDH BDR(distcp) does not support ADLS source/targets.
