@@ -89,6 +89,7 @@ object ParquetValidate {
       .appName("spark-hive-tools::ParquetValidate")
       .enableHiveSupport()
       .getOrCreate
+      
     spark.sparkContext.setLogLevel("WARN")
 
     ParquetValidate.Validate(spark, table)

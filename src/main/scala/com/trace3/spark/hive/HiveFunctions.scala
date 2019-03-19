@@ -97,7 +97,7 @@ object HiveFunctions {
     } else {
       val crstr = HiveFunctions.GetCreateTableString(spark, table)
 
-      path = HiveFunctions.GetTableLocationURI(crstr)
+      path = HiveFunctions.ExtractTableLocationURI(crstr)
 
       if ( path.isEmpty ) {
         path = spark.conf.getOption("hive.metastore.warehouse.dir")
@@ -144,7 +144,7 @@ object HiveFunctions {
     * @param createStr  The Hive CREATE TABLE string
     * @return           The LOCATION target string
     */
-  def GetTableLocationURI ( createStr: String ) : String = {
+  def ExtractTableLocationURI ( createStr: String ) : String = {
     val pat  = """CREATE .*TABLE.*LOCATION\s+'(.+)' TBL.*""".r
 
     if ( createStr.contains("LOCATION") ) {
