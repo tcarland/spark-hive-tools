@@ -11,7 +11,7 @@ import org.apache.hadoop.fs.Path
 import hive.HiveFunctions
 
 
-object DBTableLocations {
+object DbTableLocations {
 
   val usage : String =
     """
@@ -20,12 +20,13 @@ object DBTableLocations {
     """.stripMargin
 
 
-  def ValidateLocations ( spark: SparkSession, dbname: String ) : Unit = {
+  def ValidateTableLocations ( spark: SparkSession, dbname: String ) : Unit = {
     import spark.implicits._
 
     val tables = spark.catalog.listTables(dbname)
       .select($"name")
       .where($"tableType" === "EXTERNAL")
+      .collect
 
     val dbloc  = HiveFunctions.GetDatabaseLocationURI(spark, dbname);
     println(" ==> Database Location: " + dbloc)
@@ -33,7 +34,7 @@ object DBTableLocations {
     tables.foreach( row => {
         val fqtn   = dbname + "." + row.getString(0)
         val tblloc = HiveFunctions.GetTableURI(spark, fqtn)
-        if ( tblloc.equalsIgnoreCase(dbloc) ) {
+        if ( tblloc.contains(dbloc) ) {
             println(" ==> match " + fqtn)
         } else {
             println(" ==> MISMATCH: " + tblloc)
@@ -58,7 +59,7 @@ object DBTableLocations {
 
     spark.sparkContext.setLogLevel("WARN")
 
-    DBTableLocations.ValidateLocations(spark, dbname)
+    DbTableLocations.ValidateTableLocations(spark, dbname)
 
     println(" ==> Finished.")
     spark.stop
