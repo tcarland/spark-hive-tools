@@ -11,6 +11,7 @@ on Hive tables.
  * ParquetValidate  - Compare schemas across parquet partitions (ie. schema evolution).
  * DBValidate       - Compare schema of a hive table to an external jdbc database.
  * HiveTableMeta    - Create a file of table meta statements for a given database.
+ * DBTableLocations - Compare external table locations with parent db location.
 
 
 ##### HiveTableSwapper
@@ -70,17 +71,13 @@ r=$?
 return $r
 ```
 
-<!--
- * Repartitioner
--->
-
 ##### ParquetValidate
 
  Iterates on a Parquet Table's Partitions and reports on any missing columns, usually
 a result of schema evolution feature in Parquet.
 
 
-##### DBValidate
+##### DbValidate
 
 Compares the columns of an external database table (via JDBC) to a given Hive Table
 with the option of comparing column values by running a sum of n cols aross y rows.
@@ -116,3 +113,11 @@ used to recreate table metadata in a different environment. This can be useful
 for cloud environments, for instance, in Azure, using ADLS endpoints for
 external tables would need their endpoint HDFS locations modified when tables are
 copied elsewhere. Note that CDH BDR(distcp) does not support ADLS source/targets.
+
+##### DBTableLocations
+
+A good Hive warehouse practice is to locate all tables under a common db path.
+This should be true whether or not tables are marked as External or Unmanaged.
+This app simply compares table locations with db locations and prints any
+mismatches in location where the table sits physically out of the parent
+database location.

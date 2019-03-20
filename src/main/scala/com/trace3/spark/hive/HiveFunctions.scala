@@ -68,15 +68,11 @@ object HiveFunctions {
     import spark.implicits._
     val locations = spark.catalog.listTables(dbname).collect
       .map( table => {
-        val createStr = spark.sql("SHOW CREATE TABLE " +
-          table.database + "." + table.name)
-          .select($"createtab_stmt").collect
-          .apply(0)
-          .getString(0)
-          .replaceAll("\n", " ")
-          .replaceAll("  ", " ")
-        ( table.name, createStr )
+        val fqtn  = table.database + "." + table.name
+        val cstr  = HiveFunctions.GetCreateTableString(spark, fqtn)
+        ( table.name, cstr )
       })
+
     locations
   }
 
@@ -85,33 +81,22 @@ object HiveFunctions {
     * provided is not already a valid HDFS path.
     *
     * @param spark  A SparkSession context.
-    * @param table  The table name string in either path or db.name format
+    * @param dbtable  The table name string in either path or db.name format
     * @return  The path or uri to the table or an empty string if undetermined.
     *
    **/
-  def GetTableURI ( spark: SparkSession, table: String ) : String = {
+  def GetTableURI ( spark: SparkSession, dbtable: String ) : String = {
     var path = ""
 
-    if ( table.contains("/") ) {
-      path = table
+    if ( dbtable.contains("/") ) {
+      path = dbtable // table name is already a path
     } else {
-      val crstr = HiveFunctions.GetCreateTableString(spark, table)
+      val cstr = HiveFunctions.GetCreateTableString(spark, dbtable)
+      path     = HiveFunctions.ExtractTableLocationURI(cstr)
 
-      path = HiveFunctions.ExtractTableLocationURI(crstr)
-
-      if ( path.isEmpty ) {
-        path = spark.conf.getOption("hive.metastore.warehouse.dir")
-          .getOrElse("/user/hive/warehouse")
-
-        if ( table.contains(".") ) {
-          val dbname = HiveFunctions.GetDBName(table)
-          if ( dbname.equalsIgnoreCase("default") )
-            path += "/" + HiveFunctions.GetTableName(table)
-          else
-            path += "/" + dbname + ".db" + "/" + HiveFunctions.GetTableName(table)
-        }
-        else
-          path += table
+      if ( path.isEmpty && dbtable.contains(".") ) {
+        path  = HiveFunctions.GetDatabaseLocationURI(spark, HiveFunctions.GetDBName(dbtable))
+        path += "/" + HiveFunctions.GetTableName(dbtable)
       }
     }
 
@@ -159,8 +144,8 @@ object HiveFunctions {
   }
 
 
-  /**  Convenience function to rename a hive table location to a
-    *  new table name in the same database. eg. Given a location of
+  /**  Convenience function to rename a hive table location to a new
+    *  table name in the same database. eg. Given a location of
     *  'maprfs:///user/tca/hive/warehouse/default/table1'
     *  and a table name of 'table2' the new location will be
     *  'maprfs:////user/tca/hive/warehouse/default/table2'
@@ -169,7 +154,7 @@ object HiveFunctions {
     *  the table name.
     *
     * @param loc       The current location string.
-    * @param tableName The name of the new table.
+    * @param tableName The new name of the table.
     * @return          Tne new location string.
     */
   def CopyTableLocation ( loc: String, tableName: String ) : String = {
