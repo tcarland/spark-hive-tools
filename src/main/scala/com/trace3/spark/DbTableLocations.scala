@@ -20,7 +20,7 @@ object DbTableLocations {
     """.stripMargin
 
 
-  def ValidateTableLocations ( spark: SparkSession, dbname: String ) : Unit = {
+  def CheckTableLocations ( spark: SparkSession, dbname: String ) : Unit = {
     import spark.implicits._
 
     val tables = spark.catalog.listTables(dbname)
@@ -37,9 +37,10 @@ object DbTableLocations {
         if ( tblloc.contains(dbloc) ) {
             println(" ==> match " + fqtn)
         } else {
-            println(" ==> MISMATCH: " + tblloc)
+            println(" ==> MISMATCH: " + fqtn + " = " + tblloc)
         }
     })
+
   }
 
 
@@ -59,7 +60,7 @@ object DbTableLocations {
 
     spark.sparkContext.setLogLevel("WARN")
 
-    DbTableLocations.ValidateTableLocations(spark, dbname)
+    DbTableLocations.CheckTableLocations(spark, dbname)
 
     println(" ==> Finished.")
     spark.stop
