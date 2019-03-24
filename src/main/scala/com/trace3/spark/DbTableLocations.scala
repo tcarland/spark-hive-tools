@@ -54,7 +54,7 @@ object DbTableLocations {
 
     val spark = SparkSession
       .builder()
-      .appName("spark-hive-tools::ParquetValidate")
+      .appName("spark-hive-tools::DbTableLocations")
       .enableHiveSupport()
       .getOrCreate
 
