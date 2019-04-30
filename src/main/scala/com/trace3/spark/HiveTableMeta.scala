@@ -25,7 +25,8 @@ object HiveTableMeta {
       | ==>  Usage: HiveTableMeta <action> <filename> <dbname>
       | ==>      action    = save|restore
       | ==>     filename   = Name of output file of create statements.
-      | ==>      dbname    = Name of schema or database to dump.
+      | ==>      dbname    = Name of schema or database to dump or restore.
+      | ==>    nameservice = For restores, target namenode or service name.
     """.stripMargin
 
 
@@ -58,9 +59,16 @@ object HiveTableMeta {
     }
   }
 
-
-  def RestoreTableMeta ( spark: SparkSession, inFile: String ) : Unit = {
+  /** Restore the metadata from file modifiying the hdfs uri for the correct
+    * namenode or nameservice name. Note only the name should be provided.
+    * eg. nn1:8020  or  'nameservice2' and not 'hdfs://nn1:8020/'
+   **/
+  def RestoreTableMeta ( spark: SparkSession, inFile: String, hdfsnn: String ) : Unit = {
     import spark.implicits._
+
+    val pat1 = """(CREATE .*)( TBLPROPERTIES .*)""".r
+    val pat2 = """(CREATE .*TABLE.* )(LOCATION\s+'.+')(.*)""".r
+    val pat3 = """LOCATION 'hdfs://\S+?/(\S+)'""".r
 
     val schema = StructType(
       StructField("NAME", StringType, true) ::
@@ -70,7 +78,27 @@ object HiveTableMeta {
     spark.read.schema(schema)
       .csv(inFile)
       .collect
-      .foreach( row => spark.sql(row(1).toString) )
+      .foreach( row => {
+          val createStr = row(1).toString
+          val newstr = if ( createStr.contains("EXTERNAL") ) {
+              val (tblstr, _) = createStr match {
+                  case pat1(m1, m2) => (m1, m2)
+              }
+              val (ctbl, loc, rest) = createStr match {
+                  case pat2(m1,m2,m3) => (m1, m2, m3)
+              }
+              val tblpath = loc match {
+                  case pat3(m1) => m1
+              }
+              val newloc = s" LOCATION 'hdfs://" + hdfsnn + "/" + tblpath + "' "
+              val nstr = ctbl + newloc + rest
+              nstr
+          } else {
+              createStr
+          }
+          println(" ==> " + newstr)
+          spark.sql(newstr)
+      })
   }
 
 
@@ -83,6 +111,13 @@ object HiveTableMeta {
     val action  = args(0)
     val csvfile = args(1)
     val dbname  = if ( args.length == 3 ) args(2) else s""
+    val nsname  = if ( args.length == 4 ) args(3) else s""
+
+    if ( action.equalsIgnoreCase("restore") && nsname.isEmpty ) {
+      System.err.println(" Error in restore, namenode info is required")
+      System.err.println(usage)
+      System.exit(1)
+    }
 
     val spark = SparkSession
       .builder()
@@ -94,7 +129,7 @@ object HiveTableMeta {
     if ( action.equalsIgnoreCase("save") )
       HiveTableMeta.SaveTableMeta(spark, dbname, csvfile)
     else if ( action.equalsIgnoreCase("restore") )
-      HiveTableMeta.RestoreTableMeta(spark, csvfile)
+      HiveTableMeta.RestoreTableMeta(spark, csvfile, nsname)
 
     println(" => Finished.")
     spark.stop
