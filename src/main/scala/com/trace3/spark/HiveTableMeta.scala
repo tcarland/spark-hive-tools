@@ -58,9 +58,16 @@ object HiveTableMeta {
     }
   }
 
-
-  def RestoreTableMeta ( spark: SparkSession, inFile: String ) : Unit = {
+  /** Restore the metadata from file modifiying the hdfs uri for the correct
+    * namenode or nameservice name. Note only the name should be provided.
+    * eg. nn1:8020  or  'nameservice2' and not 'hdfs://nn1:8020/'
+   **/
+  def RestoreTableMeta ( spark: SparkSession, inFile: String, hdfsnn: String ) : Unit = {
     import spark.implicits._
+
+    val pat1 = """(CREATE .*)( TBLPROPERTIES .*)""".r
+    val pat2 = """(CREATE .*TABLE.* )(LOCATION\s+'.+')(.*)""".r
+    val pat3 = """LOCATION 'hdfs://\S+?/(\S+)'""".r
 
     val schema = StructType(
       StructField("NAME", StringType, true) ::
@@ -70,7 +77,27 @@ object HiveTableMeta {
     spark.read.schema(schema)
       .csv(inFile)
       .collect
-      .foreach( row => spark.sql(row(1).toString) )
+      .foreach( row => {
+          val createStr = row(1).toString
+          val newstr = if ( createStr.contains("EXTERNAL") ) {
+              val (tblstr, _) = createStr match {
+                  case pat1(m1, m2) => (m1, m2)
+              }
+              val (ctbl, loc, rest) = createStr match {
+                  case pat2(m1,m2,m3) => (m1, m2, m3)
+              }
+              val tblpath = loc match {
+                  case pat3(m1) => m1
+              }
+              val newloc = s" LOCATION 'hdfs://" + hdfsnn + "/" + tblpath + "' "
+              val nstr = ctbl + newloc + rest
+              nstr
+          } else {
+              createStr
+          }
+          println(" ==> " + newstr)
+          spark.sql(newstr)
+      })
   }
 
 
