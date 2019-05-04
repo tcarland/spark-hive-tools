@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
 #
 # spark-submit for DbValidate
+#
 
+APP="com.trace3.spark.DbValidate"
 
-APP_JAR="target/spark-hive-tools-0.2.0-jar-with-dependencies.jar"
-APP_CLASS="com.trace3.spark.DbValidate"
+cwd=$(dirname "$(readlink -f "$0")")
+. $cwd/hive-tools-config.sh
 
 spark-submit --master yarn \
   --deploy-mode client \
-  --class $APP_CLASS \
+  --class $APP \
   $APP_JAR \
   $@

@@ -59,11 +59,11 @@ object SHTTestInit {
     props.setProperty("password", pass)
     props.setProperty("driver", driver)
 
-    // write mysql table
+    // write to mysql table
     val df = spark.read.schema(schema).option("header", true).csv("sht_data1.csv")
     df.write.mode(SaveMode.Append).jdbc(url, dbtable, props)
 
-    // write hive table
+    // write to hive table
     val df2 = spark.read.schema(schema).option("header", true).csv("sht_data2.csv")
     spark.sql("DROP TABLE IF EXISTS " + hvtable)
     spark.sql("CREATE TABLE " + hvtable +
@@ -79,4 +79,3 @@ object SHTTestInit {
   }
 
 }
-

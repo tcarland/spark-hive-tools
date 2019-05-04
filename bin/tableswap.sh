@@ -3,11 +3,13 @@
 #  Spark submit script for the HiveTableSwapper
 #
 
-APP_JAR="target/spark-hive-tools-0.2.0-jar-with-dependencies.jar"
-APP_CLASS="com.trace3.spark.HiveTableSwapper"
+APP="com.trace3.spark.HiveTableSwapper"
+
+cwd=$(dirname "$(readlink -f "$0")")
+. $cwd/hive-tools-config.sh
 
 spark-submit --master yarn \
   --deploy-mode client \
-  --class $APP_CLASS \
+  --class $APP \
   $APP_JAR \
   $@
