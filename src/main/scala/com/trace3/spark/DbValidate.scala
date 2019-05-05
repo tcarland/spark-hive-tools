@@ -10,8 +10,7 @@ import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
 import org.apache.hadoop.fs.FileSystem
 import org.apache.hadoop.fs.Path
-import scala.collection.immutable.List
-import scala.collection.immutable.Map
+import scala.collection.immutable.{List, Map}
 
 import java.sql.Timestamp
 import java.text.SimpleDateFormat
@@ -57,7 +56,7 @@ object DbValidate {
 
 
 
-  /** Function for recursively parsing an argument list providing both a 
+  /** Function for recursively parsing an argument list providing both a
     * 'List' of flags (with no arguments) and a 'Map' of argument key/values
    **/
   def parseOpts ( args: OptList ) : (OptMap, OptList)  =
@@ -243,7 +242,7 @@ object DbValidate {
       .getOrCreate()
     spark.sparkContext.setLogLevel("WARN")
 
-    val (optMap, optList) = parseOpts(args.toList)
+    val (optMap, optList) = DbValidate.parseOpts(args.toList)
 
     DbValidate.validate(spark, optMap, optList)
 
@@ -252,5 +251,3 @@ object DbValidate {
   } // main
 
 } // object DbValidate
-
-

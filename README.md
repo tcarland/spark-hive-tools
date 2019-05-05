@@ -84,6 +84,9 @@ with the option of comparing column values by running a sum of n cols aross y ro
 
 *Testing*
 
+To build the test jar, first compile via ***mvn package && mvn scala:testCompile***
+followed by running the script **src/test/resources/build-test-jar.sh**.
+
 The test for DBValidate uses a Mysql instance to run the comparison. The
 following will seed the test data in both MySQL and Hive for running the test app.
 
@@ -94,12 +97,10 @@ following will seed the test data in both MySQL and Hive for running the test ap
   $ ./src/test/resources/dbval-init.sh mysqlhost:port  
 ```
 
-To build the jar for testing, first compile via ***mvn package*** followed by
-running the script **src/test/resources/build-test-jar.sh**
 Run the *dbval-test.sh* script providing the hostname of the mysql server to
 run the test.
 ```
-  ./bin/dbval-test.sh mydbhost:3306
+  ./src/test/resources/dbval-test.sh mydbhost:3306
 ```
 
 * Note that scripts should be run relative to the project root directory.

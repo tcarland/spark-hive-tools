@@ -32,7 +32,7 @@ object SHTTestInit {
     val host    = args(0)
     val user    = "sht"
     val pass    = "shttester"
-    val url     = "jdbc:mysql://" + host + "/sht_test"
+    val url     = "jdbc:mysql://" + host + "/sht_test;useSSL=false"
     val driver  = "com.mysql.jdbc.Driver"
     val dbtable = "sht_test.testdata1"
     val hvtable = "default.sht_testdata2"

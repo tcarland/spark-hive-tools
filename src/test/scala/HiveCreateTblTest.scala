@@ -78,7 +78,7 @@ object HiveCreateTblTest {
     squaresDF.write.parquet("test.db/test_table/key=1")
     cubesDF.write.parquet("test.db/test_table/key=2")
 
-    ParquetValidate.validate(spark, "test.db/test_table")
+    ParquetValidate.Validate(spark, "test.db/test_table")
 
     org.apache.hadoop.fs.FileSystem.get(spark.sparkContext.hadoopConfiguration)
       .delete(new Path("test.db"), true)
