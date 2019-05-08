@@ -6,9 +6,9 @@ package com.trace3.spark
 
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.types._
-import org.apache.hadoop.fs.FileSystem
-import org.apache.hadoop.fs.FileUtil
-import org.apache.hadoop.fs.Path
+import org.apache.hadoop.fs.{FileSystem, FileUtil, Path}
+
+import scala.collection.immutable.{List, Map}
 
 import hive.HiveFunctions
 
@@ -19,23 +19,57 @@ import hive.HiveFunctions
  **/
 object HiveTableMeta {
 
+  type OptMap   = Map[String, String]
+  type OptList  = List[String]
+
+
+  val metaSchema = StructType(
+    StructField("NAME", StringType, true) ::
+    StructField("STMT", StringType, true) :: Nil
+  )
 
   val usage : String =
     """
-      | ==>  Usage: HiveTableMeta <action> <filename> <dbname>
-      | ==>      action    = save|restore
-      | ==>     filename   = Name of output file of create statements.
-      | ==>      dbname    = Name of schema or database to dump or restore.
-      | ==>    nameservice = For restores, target namenode or service name.
+      |Usage: HiveTableMeta [options] <action>
+      |  --dbname <name>  : The name of the database to save or restore to.
+      |  --inFile <file>  : The input csv file to use for 'savetarget' or 'restore."
+      |  --outFile <file> : Name of the output csv file to write for 'savetarget'""
+      |  --namenode <ns>  : A namenode or nameservice name to use as the restore target"
+      |     <action>      : The action to take should be: save|savetarget|restore"
     """.stripMargin
 
 
-  def SaveTableMeta ( spark: SparkSession, dbname: String, outFile: String ) : Unit = {
+  /** Function for recursively parsing an argument list providing both a
+    * 'List' of flags (with no arguments) and a 'Map' of argument key/values
+   **/
+  def parseOpts ( args: OptList ) : (OptMap, OptList)  =
+  {
+    def nextOpt ( argList: OptList, optMap: OptMap ) : (OptMap, OptList) = {
+      val longOpt = "^--(\\S+)".r
+      val regOpt  = "^-(\\S+)".r
+
+      argList match {
+        case Nil => (optMap, argList)
+        case longOpt(opt)  :: value  :: tail => nextOpt(tail, optMap ++ Map(opt -> value))
+        case regOpt(opt)             :: tail => nextOpt(tail, optMap ++ Map(opt -> null))
+        case _ => (optMap, argList)
+      }
+    }
+
+    nextOpt(args, Map())
+  }
+
+
+
+  def SaveTableMeta ( spark: SparkSession, optMap: OptMap ) : Unit = {
+    import spark.implicits._
+
+    val dbname  = optMap.getOrElse("dbname", "")
+    val outFile = optMap.getOrElse("outFile", "")
     val tmpOut    = outFile + "-tmpout"
     val hconf     = spark.sparkContext.hadoopConfiguration
     val hdfs      = FileSystem.get(hconf)
 
-    import spark.implicits._
 
     if ( hdfs.exists(new Path(outFile)) ) {
       System.err.println("Fatal Error: Output path already exists")
@@ -63,22 +97,27 @@ object HiveTableMeta {
     * namenode or nameservice name. Note only the name should be provided.
     * eg. nn1:8020  or  'nameservice2' and not 'hdfs://nn1:8020/'
    **/
-  def RestoreTableMeta ( spark: SparkSession, inFile: String, hdfsnn: String ) : Unit = {
+  def SaveTargetTableMeta ( spark: SparkSession, optMap: OptMap ) : Unit = {
     import spark.implicits._
+
+    val inFile  = optMap.getOrElse("inFile", "")
+    val outFile = optMap.getOrElse("outFile", "")
+    val hdfsnn  = optMap.getOrElse("namenode", "")
 
     val pat1 = """(CREATE .*)( TBLPROPERTIES .*)""".r
     val pat2 = """(CREATE .*TABLE.* )(LOCATION\s+'.+')(.*)""".r
     val pat3 = """LOCATION 'hdfs://\S+?/(\S+)'""".r
 
-    val schema = StructType(
-      StructField("NAME", StringType, true) ::
-      StructField("STMT", StringType, true) :: Nil
-    )
 
-    spark.read.schema(schema)
+    if ( inFile.isEmpty || outFile.isEmpty || hdfsnn.isEmpty ) {
+      System.err.println(usage)
+      System.exit(1)
+    }
+
+    val meta : Array[(String, String)] = spark.read.schema(metaSchema)
       .csv(inFile)
       .collect
-      .foreach( row => {
+      .map( row => {
           val createStr = row(1).toString
           val newstr = if ( createStr.contains("EXTERNAL") ) {
               val (tblstr, _) = createStr match {
@@ -91,14 +130,40 @@ object HiveTableMeta {
                   case pat3(m1) => m1
               }
               val newloc = s" LOCATION 'hdfs://" + hdfsnn + "/" + tblpath + "' "
-              val nstr = ctbl + newloc + rest
-              nstr
+              (ctbl + newloc + rest)
           } else {
               createStr
           }
-          println(" ==> " + newstr)
-          spark.sql(newstr)
+          ( row(0).toString, newstr )
       })
+
+    val tmpOut    = outFile + "-tmpout"
+    val hconf     = spark.sparkContext.hadoopConfiguration
+    val hdfs      = FileSystem.get(hconf)
+
+    meta.toSeq.toDF.write.csv(tmpOut)
+
+    if ( FileUtil.copyMerge(hdfs, new Path(tmpOut),
+                            hdfs, new Path(outFile),
+                            false, hconf, null) )
+    {
+      hdfs.delete(new Path(tmpOut), true)
+    }
+  }
+
+  def RestoreTableMeta ( spark: SparkSession, optMap: OptMap ) : Unit = {
+    import spark.implicits._
+
+    val inFile = optMap.getOrElse("inFile", "")
+    val dbname = optMap.getOrElse("dbname", "")
+
+    spark.read.schema(metaSchema)
+      .csv(inFile)
+      .collect
+      .foreach( row => {
+        val createStr = row(1).toString
+        spark.sql(createStr)
+    })
   }
 
 
@@ -108,15 +173,11 @@ object HiveTableMeta {
       System.exit(1)
     }
 
-    val action  = args(0)
-    val csvfile = args(1)
-    val dbname  = if ( args.length == 3 ) args(2) else s""
-    val nsname  = if ( args.length == 4 ) args(3) else s""
+    val (optMap, optList) = HiveTableMeta.parseOpts(args.toList)
 
-    if ( action.equalsIgnoreCase("restore") && nsname.isEmpty ) {
-      System.err.println(" Error in restore, namenode info is required")
-      System.err.println(usage)
-      System.exit(1)
+    if ( optList.isEmpty ) {
+        System.err.println(usage)
+        System.exit(1)
     }
 
     val spark = SparkSession
@@ -126,10 +187,16 @@ object HiveTableMeta {
       .getOrCreate
     spark.sparkContext.setLogLevel("WARN")
 
+    val action = optList.last
+
     if ( action.equalsIgnoreCase("save") )
-      HiveTableMeta.SaveTableMeta(spark, dbname, csvfile)
+      HiveTableMeta.SaveTableMeta(spark, optMap)
+    else if ( action.equalsIgnoreCase("savetarget") )
+      HiveTableMeta.SaveTargetTableMeta(spark, optMap)
     else if ( action.equalsIgnoreCase("restore") )
-      HiveTableMeta.RestoreTableMeta(spark, csvfile, nsname)
+      HiveTableMeta.RestoreTableMeta(spark, optMap)
+    else
+      System.err.println("No action recognized.")
 
     println(" => Finished.")
     spark.stop

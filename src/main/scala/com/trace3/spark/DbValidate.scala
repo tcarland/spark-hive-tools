@@ -8,8 +8,7 @@ package com.trace3.spark
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
-import org.apache.hadoop.fs.FileSystem
-import org.apache.hadoop.fs.Path
+import org.apache.hadoop.fs.{FileSystem, Path}
 import scala.collection.immutable.{List, Map}
 
 import java.sql.Timestamp
