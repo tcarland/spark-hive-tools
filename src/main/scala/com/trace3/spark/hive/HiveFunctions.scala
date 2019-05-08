@@ -52,6 +52,7 @@ object HiveFunctions {
       .getAs[String]("createtab_stmt")
       .replaceAll("\n", " ")
       .replaceAll("  ", " ")
+      
     createstr
   }
 
