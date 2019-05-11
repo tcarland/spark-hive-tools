@@ -1,7 +1,7 @@
 # spark-hive-tools runtime configuration
 #
 
-export SPARK_HIVETOOLS_VERSION="0.2.3"
+export SPARK_HIVETOOLS_VERSION="0.2.4"
 export SPARK_VERSION="2.4.2"
 export KAFKA_VERSION="0-10_2.12"
 

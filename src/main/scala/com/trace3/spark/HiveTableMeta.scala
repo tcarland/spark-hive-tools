@@ -33,7 +33,7 @@ object HiveTableMeta {
       |Usage: HiveTableMeta [options] <action>
       |  --dbname <name>  : The name of the database to save or restore to.
       |  --inFile <file>  : The input csv file to use for 'savetarget' or 'restore."
-      |  --outFile <file> : Name of the output csv file to write for 'savetarget'""
+      |  --outFile <file> : The output csv file for 'save' or 'savetarget'"
       |  --namenode <ns>  : A namenode or nameservice name to use as the restore target"
       |     <action>      : The action to take should be: save|savetarget|restore"
     """.stripMargin
@@ -110,6 +110,7 @@ object HiveTableMeta {
 
 
     if ( inFile.isEmpty || outFile.isEmpty || hdfsnn.isEmpty ) {
+      System.err.println(" ==> Error, invalid or missing options")
       System.err.println(usage)
       System.exit(1)
     }
@@ -123,7 +124,7 @@ object HiveTableMeta {
               val (tblstr, _) = createStr match {
                   case pat1(m1, m2) => (m1, m2)
               }
-              val (ctbl, loc, rest) = createStr match {
+              val (ctbl, loc, rest) = tblstr match {
                   case pat2(m1,m2,m3) => (m1, m2, m3)
               }
               val tblpath = loc match {
