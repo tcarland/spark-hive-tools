@@ -33,7 +33,7 @@ object HiveTableMeta {
       |Usage: HiveTableMeta [options] <action>
       |  --dbname <name>  : The name of the database to save or restore to.
       |  --inFile <file>  : The input csv file to use for 'savetarget' or 'restore."
-      |  --outFile <file> : Name of the output csv file to write for 'savetarget'""
+      |  --outFile <file> : The output csv file for 'save' or 'savetarget'"
       |  --namenode <ns>  : A namenode or nameservice name to use as the restore target"
       |     <action>      : The action to take should be: save|savetarget|restore"
     """.stripMargin
@@ -93,6 +93,7 @@ object HiveTableMeta {
     }
   }
 
+
   /** Restore the metadata from file modifiying the hdfs uri for the correct
     * namenode or nameservice name. Note only the name should be provided.
     * eg. nn1:8020  or  'nameservice2' and not 'hdfs://nn1:8020/'
@@ -110,6 +111,7 @@ object HiveTableMeta {
 
 
     if ( inFile.isEmpty || outFile.isEmpty || hdfsnn.isEmpty ) {
+      System.err.println(" ==> Error, invalid or missing options")
       System.err.println(usage)
       System.exit(1)
     }
@@ -123,14 +125,14 @@ object HiveTableMeta {
               val (tblstr, _) = createStr match {
                   case pat1(m1, m2) => (m1, m2)
               }
-              val (ctbl, loc, rest) = createStr match {
+              val (ctbl, loc, rest) = tblstr match {
                   case pat2(m1,m2,m3) => (m1, m2, m3)
               }
               val tblpath = loc match {
                   case pat3(m1) => m1
               }
               val newloc = s" LOCATION 'hdfs://" + hdfsnn + "/" + tblpath + "' "
-              (ctbl + newloc + rest)
+              ( ctbl + newloc + rest )
           } else {
               createStr
           }
@@ -151,11 +153,10 @@ object HiveTableMeta {
     }
   }
 
-  def RestoreTableMeta ( spark: SparkSession, optMap: OptMap ) : Unit = {
-    import spark.implicits._
 
+  /** Restores table metadata from a provided meta file */
+  def RestoreTableMeta ( spark: SparkSession, optMap: OptMap ) : Unit = {
     val inFile = optMap.getOrElse("inFile", "")
-    val dbname = optMap.getOrElse("dbname", "")
 
     spark.read.schema(metaSchema)
       .csv(inFile)
@@ -165,6 +166,7 @@ object HiveTableMeta {
         spark.sql(createStr)
     })
   }
+
 
 
   def main ( args: Array[String] ) : Unit = {
