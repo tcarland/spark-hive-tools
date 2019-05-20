@@ -93,6 +93,7 @@ object HiveTableMeta {
     }
   }
 
+
   /** Restore the metadata from file modifiying the hdfs uri for the correct
     * namenode or nameservice name. Note only the name should be provided.
     * eg. nn1:8020  or  'nameservice2' and not 'hdfs://nn1:8020/'
@@ -131,7 +132,7 @@ object HiveTableMeta {
                   case pat3(m1) => m1
               }
               val newloc = s" LOCATION 'hdfs://" + hdfsnn + "/" + tblpath + "' "
-              (ctbl + newloc + rest)
+              ( ctbl + newloc + rest )
           } else {
               createStr
           }
@@ -152,11 +153,10 @@ object HiveTableMeta {
     }
   }
 
-  def RestoreTableMeta ( spark: SparkSession, optMap: OptMap ) : Unit = {
-    import spark.implicits._
 
+  /** Restores table metadata from a provided meta file */
+  def RestoreTableMeta ( spark: SparkSession, optMap: OptMap ) : Unit = {
     val inFile = optMap.getOrElse("inFile", "")
-    val dbname = optMap.getOrElse("dbname", "")
 
     spark.read.schema(metaSchema)
       .csv(inFile)
@@ -166,6 +166,7 @@ object HiveTableMeta {
         spark.sql(createStr)
     })
   }
+
 
 
   def main ( args: Array[String] ) : Unit = {
