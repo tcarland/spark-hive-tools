@@ -103,17 +103,25 @@ object HiveTableMeta {
 
     val inFile  = optMap.getOrElse("inFile", "")
     val outFile = optMap.getOrElse("outFile", "")
-    val hdfsnn  = optMap.getOrElse("namenode", "")
+    var hdfsnn  = optMap.getOrElse("namenode", "")
+    val tmpOut  = outFile + "-tmpout"
+    val hconf   = spark.sparkContext.hadoopConfiguration
+    val hdfs    = FileSystem.get(hconf)
 
     val pat1    = """(CREATE .*)( TBLPROPERTIES .*)""".r
     val pat2    = """(CREATE .*TABLE.* )(LOCATION\s+'.+')(.*)""".r
     val pat3    = """LOCATION 'hdfs://\S+?/(\S+)'""".r
-
+    val pat4    = """hdfs://(\S+)?/""".r
 
     if ( inFile.isEmpty || outFile.isEmpty || hdfsnn.isEmpty ) {
       System.err.println(" ==> Error, invalid or missing options")
       System.err.println(usage)
       System.exit(1)
+    }
+
+    val host = hdfsnn match {
+      case pat4(m1) => m1
+      case _        => hdfsnn
     }
 
     val meta : Array[(String, String)] = spark.read.schema(metaSchema)
@@ -131,17 +139,13 @@ object HiveTableMeta {
           val tblpath = loc match {
             case pat3(m1) => m1
           }
-          val newloc = s" LOCATION 'hdfs://" + hdfsnn + "/" + tblpath + "' "
+          val newloc = s" LOCATION 'hdfs://" + host + "/" + tblpath + "' "
           ( ctbl + newloc + rest )
         } else {
           createStr
         }
         ( row(0).toString, newstr )
       })
-
-    val tmpOut    = outFile + "-tmpout"
-    val hconf     = spark.sparkContext.hadoopConfiguration
-    val hdfs      = FileSystem.get(hconf)
 
     meta.toSeq.toDF.write.csv(tmpOut)
 
