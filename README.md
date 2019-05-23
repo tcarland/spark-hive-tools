@@ -82,10 +82,10 @@ a result of schema evolution feature in Parquet.
 Compares the columns of an external database table (via JDBC) to a given Hive Table
 with the option of comparing column values by running a sum of n cols aross y rows.
 
-*Testing*
+**Testing DbValidate**
 
 To build the test jar, first compile via ***mvn package && mvn scala:testCompile***
-followed by running the script **src/test/resources/build-test-jar.sh**.
+followed by running the script ***src/test/resources/build-test-jar.sh***.
 
 The test for DBValidate uses a Mysql instance to run the comparison. The
 following will seed the test data in both MySQL and Hive for running the test app.
@@ -100,10 +100,10 @@ following will seed the test data in both MySQL and Hive for running the test ap
 Run the *dbval-test.sh* script providing the hostname of the mysql server to
 run the test.
 ```
-  ./src/test/resources/dbval-test.sh mydbhost:3306
+  ./src/test/resources/dbval-test.sh localhost:3306
 ```
 
-* Note that scripts should be run relative to the project root directory.
+Note that scripts should be run relative to the project root directory.
 
 
 ##### HiveTableMeta

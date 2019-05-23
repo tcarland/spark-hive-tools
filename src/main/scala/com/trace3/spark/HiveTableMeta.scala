@@ -66,9 +66,9 @@ object HiveTableMeta {
 
     val dbname  = optMap.getOrElse("dbname", "")
     val outFile = optMap.getOrElse("outFile", "")
-    val tmpOut    = outFile + "-tmpout"
-    val hconf     = spark.sparkContext.hadoopConfiguration
-    val hdfs      = FileSystem.get(hconf)
+    val tmpOut  = outFile + "-tmpout"
+    val hconf   = spark.sparkContext.hadoopConfiguration
+    val hdfs    = FileSystem.get(hconf)
 
 
     if ( hdfs.exists(new Path(outFile)) ) {
@@ -103,12 +103,15 @@ object HiveTableMeta {
 
     val inFile  = optMap.getOrElse("inFile", "")
     val outFile = optMap.getOrElse("outFile", "")
-    val hdfsnn  = optMap.getOrElse("namenode", "")
+    var hdfsnn  = optMap.getOrElse("namenode", "")
+    val tmpOut  = outFile + "-tmpout"
+    val hconf   = spark.sparkContext.hadoopConfiguration
+    val hdfs    = FileSystem.get(hconf)
 
-    val pat1 = """(CREATE .*)( TBLPROPERTIES .*)""".r
-    val pat2 = """(CREATE .*TABLE.* )(LOCATION\s+'.+')(.*)""".r
-    val pat3 = """LOCATION 'hdfs://\S+?/(\S+)'""".r
-
+    val pat1    = """(CREATE .*)( TBLPROPERTIES .*)""".r
+    val pat2    = """(CREATE .*TABLE.* )(LOCATION\s+'.+')(.*)""".r
+    val pat3    = """LOCATION 'hdfs://\S+?/(\S+)'""".r
+    val pat4    = """hdfs://(\S+)?/""".r
 
     if ( inFile.isEmpty || outFile.isEmpty || hdfsnn.isEmpty ) {
       System.err.println(" ==> Error, invalid or missing options")
@@ -116,32 +119,33 @@ object HiveTableMeta {
       System.exit(1)
     }
 
+    val host = hdfsnn match {
+      case pat4(m1) => m1
+      case _        => hdfsnn
+    }
+
     val meta : Array[(String, String)] = spark.read.schema(metaSchema)
       .csv(inFile)
       .collect
       .map( row => {
-          val createStr = row(1).toString
-          val newstr = if ( createStr.contains("EXTERNAL") ) {
-              val (tblstr, _) = createStr match {
-                  case pat1(m1, m2) => (m1, m2)
-              }
-              val (ctbl, loc, rest) = tblstr match {
-                  case pat2(m1,m2,m3) => (m1, m2, m3)
-              }
-              val tblpath = loc match {
-                  case pat3(m1) => m1
-              }
-              val newloc = s" LOCATION 'hdfs://" + hdfsnn + "/" + tblpath + "' "
-              ( ctbl + newloc + rest )
-          } else {
-              createStr
+        val createStr = row(1).toString
+        val newstr = if ( createStr.contains("EXTERNAL") ) {
+          val (tblstr, _) = createStr match {
+            case pat1(m1, m2) => (m1, m2)
           }
-          ( row(0).toString, newstr )
+          val (ctbl, loc, rest) = tblstr match {
+            case pat2(m1,m2,m3) => (m1, m2, m3)
+          }
+          val tblpath = loc match {
+            case pat3(m1) => m1
+          }
+          val newloc = s" LOCATION 'hdfs://" + host + "/" + tblpath + "' "
+          ( ctbl + newloc + rest )
+        } else {
+          createStr
+        }
+        ( row(0).toString, newstr )
       })
-
-    val tmpOut    = outFile + "-tmpout"
-    val hconf     = spark.sparkContext.hadoopConfiguration
-    val hdfs      = FileSystem.get(hconf)
 
     meta.toSeq.toDF.write.csv(tmpOut)
 
@@ -164,7 +168,7 @@ object HiveTableMeta {
       .foreach( row => {
         val createStr = row(1).toString
         spark.sql(createStr)
-    })
+      })
   }
 
 
@@ -178,8 +182,8 @@ object HiveTableMeta {
     val (optMap, optList) = HiveTableMeta.parseOpts(args.toList)
 
     if ( optList.isEmpty ) {
-        System.err.println(usage)
-        System.exit(1)
+      System.err.println(usage)
+      System.exit(1)
     }
 
     val spark = SparkSession
@@ -187,6 +191,7 @@ object HiveTableMeta {
       .appName("spark-hive-tools::HiveTableMeta")
       .enableHiveSupport()
       .getOrCreate
+
     spark.sparkContext.setLogLevel("WARN")
 
     val action = optList.last

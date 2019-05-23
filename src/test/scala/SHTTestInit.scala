@@ -17,6 +17,10 @@ object SHTTestInit {
     """.stripMargin
 
   def main ( args: Array[String] ) : Unit = {
+    if ( args.length < 1 ) {
+      println(usage)
+      System.exit(1)
+    }
 
     val spark = SparkSession
       .builder()
@@ -24,10 +28,6 @@ object SHTTestInit {
       .enableHiveSupport()
       .getOrCreate
 
-    if ( args.length < 1 ) {
-      println(usage)
-      System.exit(1)
-    }
 
     val host    = args(0)
     val user    = "sht"
@@ -60,6 +60,8 @@ object SHTTestInit {
     props.setProperty("driver", driver)
 
     // write to mysql table
+    // we intentionally do not clear the table first to allow us to rerun
+    // and increase the diff output
     val df = spark.read.schema(schema).option("header", true).csv("sht_data1.csv")
     df.write.mode(SaveMode.Append).jdbc(url, dbtable, props)
 

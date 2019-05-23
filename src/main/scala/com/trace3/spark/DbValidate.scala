@@ -29,7 +29,7 @@ object DbValidate {
 
   val usage : String =
     """
-      |DbValidate [-dh] --jdbc <jdbc uri> --dbtable <dbtable> --hive-table <table>
+      |DbValidate [-dh] --jdbc <jdbc uri> --dbtable <db.table> --hive-table <db.table>
       |  --jdbc <uri>              : The JDBC string for connecting to external db.
       |  --dbtable <db.table>      : Name of the source, external db schema.table
       |  --dbkey <keycolumn>       : Name of db column to match partition key
