@@ -52,7 +52,7 @@ object HiveFunctions {
       .getAs[String]("createtab_stmt")
       .replaceAll("\n", " ")
       .replaceAll("  ", " ")
-      
+
     createstr
   }
 
@@ -125,7 +125,7 @@ object HiveFunctions {
   /**  Given the full Hive SHOW CREATE TABLE string, extract the
     *  table location. Useful for determining the HDFS location of
     *  an external table since there is no requirement to follow the
-    *  '/path/to/schema.db/table/' semantic.
+    *  '/path/to/warehouse/schema.db/table/' semantic.
     *
     * @param createStr  The Hive CREATE TABLE string
     * @return           The LOCATION target string

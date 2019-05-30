@@ -5,6 +5,7 @@
 package com.trace3.spark
 
 import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.SaveMode
 import org.apache.spark.sql.types._
 import org.apache.hadoop.fs.{FileSystem, FileUtil, Path}
 
@@ -22,20 +23,37 @@ object HiveTableMeta {
   type OptMap   = Map[String, String]
   type OptList  = List[String]
 
+  val tablemetaname = s"default.tablestats"
 
   val metaSchema = StructType(
     StructField("NAME", StringType, true) ::
     StructField("STMT", StringType, true) :: Nil
   )
 
+  case class TableMeta (
+      name      : String,
+      dbname    : String,
+      tableType : String,
+      isTemp    : Boolean,
+      rowcnt    : Long
+  )
+
+
   val usage : String =
     """
       |Usage: HiveTableMeta [options] <action>
-      |  --dbname <name>  : The name of the database to save or restore to.
-      |  --inFile <file>  : The input csv file to use for 'savetarget' or 'restore."
-      |  --outFile <file> : The output csv file for 'save' or 'savetarget'"
-      |  --namenode <ns>  : A namenode or nameservice name to use as the restore target"
-      |     <action>      : The action to take should be: save|savetarget|restore"
+      | --dbname <name>   : The name of the database to operate on.
+      | --inFile <file>   : The input csv file to use for 'savetarget' or 'restore.
+      | --outFile <file>  : The output csv file for 'save' or 'savetarget'
+      | --outTable <name> : Alternate name of table to write stats (default.tablestats)
+      | --namenode <ns>   : A namenode or nameservice name to use as the restore target
+      |  -R               : Reset dbstats table when running stats action
+      |    <action>       : The action to take should be: save|savetarget|restore|stats
+      |
+      |    'save'         : Write out the current table schemas to --outFile
+      |  'savetarget'     : Apply a new hdfs target to -inFile writing to --outFile
+      |   'restore'       : Restore a save file to the Hive Metastore
+      |    'stats'        : Write out db table stats to a meta table
     """.stripMargin
 
 
@@ -172,6 +190,48 @@ object HiveTableMeta {
   }
 
 
+  def SaveTableStats ( spark: SparkSession, optMap: OptMap ) : Unit = {
+    val dbname = optMap.getOrElse("dbname", "")
+    val mtbl   = optMap.getOrElse("outTable", "default.dbstats")
+    val reset  = if ( optMap.contains("R") ) true else false
+
+    if ( dbname.isEmpty ) {
+      System.err.println(" ==> Error, invalid or missing options")
+      System.err.println(usage)
+      System.exit(1)
+    }
+
+    import spark.implicits._
+
+    if ( reset ) {
+        spark.sql("DROP TABLE IF EXISTS " + tablemetaname)
+        spark.sql("CREATE TABLE + tablemetaname (" +
+          "name STRING, " +
+          "dbname STRING," +
+          "tableType STRING," +
+          "isTemp BOOLEAN, " +
+          "rowcnt BIGINT) " +
+          "STORED AS parquet")
+    }
+
+    val tbls = spark.catalog
+      .listTables(dbname)
+      .collect
+      .map( table => {
+        val df = spark.read.table(table.database + "." + table.name)
+        val cnt = df.count
+        TableMeta(table.name, table.database, table.tableType, table.isTemporary, cnt)
+      })
+      .toSeq
+      .toDS
+
+    tbls.write
+      .format("parquet")
+      .mode(SaveMode.Append)
+      .insertInto(tablemetaname)
+
+  }
+
 
   def main ( args: Array[String] ) : Unit = {
     if ( args.length < 2 ) {
@@ -202,6 +262,8 @@ object HiveTableMeta {
       HiveTableMeta.SaveTargetTableMeta(spark, optMap)
     else if ( action.equalsIgnoreCase("restore") )
       HiveTableMeta.RestoreTableMeta(spark, optMap)
+    else if ( action.equalsIgnoreCase("stats") )
+      HiveTableMeta.SaveTableStats(spark, optMap)
     else
       System.err.println("No action recognized.")
 
