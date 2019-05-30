@@ -190,7 +190,7 @@ object HiveTableMeta {
   }
 
 
-  def SaveDbStats ( spark: SparkSession, optMap: OptMap ) : Unit = {
+  def SaveTableStats ( spark: SparkSession, optMap: OptMap ) : Unit = {
     val dbname = optMap.getOrElse("dbname", "")
     val mtbl   = optMap.getOrElse("outTable", "default.dbstats")
     val reset  = if ( optMap.contains("R") ) true else false
@@ -263,7 +263,7 @@ object HiveTableMeta {
     else if ( action.equalsIgnoreCase("restore") )
       HiveTableMeta.RestoreTableMeta(spark, optMap)
     else if ( action.equalsIgnoreCase("stats") )
-      HiveTableMeta.SaveDbStats(spark, optMap)
+      HiveTableMeta.SaveTableStats(spark, optMap)
     else
       System.err.println("No action recognized.")
 
