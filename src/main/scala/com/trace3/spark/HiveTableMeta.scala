@@ -23,8 +23,6 @@ object HiveTableMeta {
   type OptMap   = Map[String, String]
   type OptList  = List[String]
 
-  val tablemetaname = s"default.tablestats"
-
   val metaSchema = StructType(
     StructField("NAME", StringType, true) ::
     StructField("STMT", StringType, true) :: Nil
@@ -192,7 +190,7 @@ object HiveTableMeta {
 
   def SaveTableStats ( spark: SparkSession, optMap: OptMap ) : Unit = {
     val dbname = optMap.getOrElse("dbname", "")
-    val mtbl   = optMap.getOrElse("outTable", "default.dbstats")
+    val mtbl   = optMap.getOrElse("outTable", "default.tablestats")
     val reset  = if ( optMap.contains("R") ) true else false
 
     if ( dbname.isEmpty ) {
@@ -204,8 +202,8 @@ object HiveTableMeta {
     import spark.implicits._
 
     if ( reset ) {
-        spark.sql("DROP TABLE IF EXISTS " + tablemetaname)
-        spark.sql("CREATE TABLE + tablemetaname (" +
+        spark.sql("DROP TABLE IF EXISTS " + mtbl)
+        spark.sql("CREATE TABLE" + mtbl + " (" +
           "name STRING, " +
           "dbname STRING," +
           "tableType STRING," +
