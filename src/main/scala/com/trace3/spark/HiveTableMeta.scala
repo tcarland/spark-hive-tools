@@ -201,16 +201,16 @@ object HiveTableMeta {
 
     import spark.implicits._
 
-    if ( reset ) {
-        spark.sql("DROP TABLE IF EXISTS " + mtbl)
-        spark.sql("CREATE TABLE" + mtbl + " (" +
-          "name STRING, " +
-          "dbname STRING," +
-          "tableType STRING," +
-          "isTemp BOOLEAN, " +
-          "rowcnt BIGINT) " +
-          "STORED AS parquet")
-    }
+    if ( reset )
+      spark.sql("DROP TABLE IF EXISTS " + mtbl)
+
+    spark.sql("CREATE TABLE IF NOT EXISTS " + mtbl + " (" +
+      "name STRING, " +
+      "dbname STRING," +
+      "tableType STRING," +
+      "isTemp BOOLEAN, " +
+      "rowcnt BIGINT) " +
+      "STORED AS parquet")
 
     val tbls = spark.catalog
       .listTables(dbname)
@@ -226,8 +226,9 @@ object HiveTableMeta {
     tbls.write
       .format("parquet")
       .mode(SaveMode.Append)
-      .insertInto(tablemetaname)
+      .insertInto(mtbl)
 
+    tbls.show
   }
 
 
@@ -240,6 +241,7 @@ object HiveTableMeta {
     val (optMap, optList) = HiveTableMeta.parseOpts(args.toList)
 
     if ( optList.isEmpty ) {
+      System.err.println(" => Action not specified.")
       System.err.println(usage)
       System.exit(1)
     }
@@ -263,7 +265,7 @@ object HiveTableMeta {
     else if ( action.equalsIgnoreCase("stats") )
       HiveTableMeta.SaveTableStats(spark, optMap)
     else
-      System.err.println("No action recognized.")
+      System.err.println(" => Action not recognized.")
 
     println(" => Finished.")
     spark.stop
