@@ -4,13 +4,13 @@
 #
 
 
-APP_JAR="target/spark-hive-tools-test-0.2.6.jar"
+APP_JAR="target/spark-hive-tools-test-0.2.7.jar"
 APP_CLASS="SHTTestInit"
 
 spark-submit --master yarn \
   --deploy-mode client \
-  --num-executors 1 \
-  --executor-cores 1 \
+  --num-executors 2 \
+  --executor-cores 2 \
   --executor-memory 1g \
   --class $APP_CLASS \
   $APP_JAR \

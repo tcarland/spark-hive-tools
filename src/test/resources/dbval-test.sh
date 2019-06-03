@@ -15,7 +15,10 @@ fi
 
 
 $DBVALIDATE --user sht --password shttester \
---jdbc jdbc:mysql://${host}/sht_test --driver com.mysql.jdbc.Driver \
---dbtable sht_test.testdata1 --dbkey FLOWID \
+--jdbc jdbc:mysql://${host}/sht_test?useSSL=false \
+--driver com.mysql.jdbc.Driver \
+--dbtable sht_test.testdata1 \
+--dbkey FLOWID \
 --hive-table default.sht_testdata2 \
---sumcols BYTES,PKTS
+--sumcols BYTES,PKTS \
+--num-rows 126
