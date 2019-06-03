@@ -160,6 +160,7 @@ object DbValidate {
     props.setProperty("user", user)
     props.setProperty("password", password)
     props.setProperty("driver", driver)
+    props.setProperty("useSSL", "false")
 
     // compare top-level schema
     val extDF   = spark.read.jdbc(url, dbtable, props)
@@ -168,7 +169,7 @@ object DbValidate {
     val hvcols  = hvDF.columns.map(s => s.toUpperCase)
     val dcols   = sumcols :+ dbkey
 
-    print("\ndbtable: " + dbtable + " <")
+    print("\ndb table: " + dbtable + " Cols: <")
     dbcols.foreach(s => print(s + ", "))
     println(">")
     print("Missing columns < ")
