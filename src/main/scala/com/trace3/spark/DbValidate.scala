@@ -40,8 +40,8 @@ object DbValidate {
       |  --password-file <pwfile>  : HDFS path to a file containing the password.
       |  --driver <jdbc_driver>    : The JDBC Driver class eg. 'oracle.jdbc.driver.OracleDriver'
       |  --sumcols <col1,colN>     : A comma delimited list of value columns to compare
-      |                              by performing a SUM(col1,col2,col3) on the 5th row of
-      |                              each table (external and hive). Note do not use spaces.
+      |                              by performing a SUM(col1,col2,col3) on the first 'n' rows
+      |                              of each table (external and hive). Note do not use spaces.
       |  --num-rows <n>            : The number of rows to run the SUM(columns) comparison.
       |  --num-partitions <n>      : Number of table partitions to iterate through.
       |                              Use the '-R' option to reverse the partition order and
@@ -138,6 +138,7 @@ object DbValidate {
     val nparts  = optMap.getOrElse("num-partitions", "5").toInt
     val nrows   = optMap.getOrElse("num-rows", "5").toInt
     val addkey  = sys.env.getOrElse("SHT_COMPOSITE_KEY", "")
+    val reverse = if ( optMap.contains("R") ) true else false
     val keypat  = """(.*)=(.*)$""".r
 
     if ( url.isEmpty || dbtable.isEmpty || dbkey.isEmpty ) {
@@ -185,11 +186,11 @@ object DbValidate {
       .map(_.getPath)
       .filter(!_.getName.startsWith("_"))
 
-    val files = if ( optList.contains("R") ) {
+    val files = if ( reverse ) {
       val (fx, _) = f.reverse.splitAt(nparts)
       fx
     } else {
-      val (fx, _) = f.reverse.splitAt(nparts)
+      val (fx, _) = f.splitAt(nparts)
       fx
     }
 
