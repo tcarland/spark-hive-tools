@@ -9,8 +9,8 @@ APP_CLASS="SHTTestInit"
 
 spark-submit --master yarn \
   --deploy-mode client \
-  --num-executors 1 \
-  --executor-cores 1 \
+  --num-executors 2 \
+  --executor-cores 2 \
   --executor-memory 1g \
   --class $APP_CLASS \
   $APP_JAR \
