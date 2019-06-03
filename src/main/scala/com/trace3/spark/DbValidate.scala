@@ -160,7 +160,6 @@ object DbValidate {
     props.setProperty("user", user)
     props.setProperty("password", password)
     props.setProperty("driver", driver)
-    props.setProperty("useSSL", "false")
 
     // compare top-level schema
     val extDF   = spark.read.jdbc(url, dbtable, props)
@@ -229,7 +228,7 @@ object DbValidate {
       println("\n Partition: " + keycol + "=" + keyval)
       println("External:  Count = " + dbcnt.toString)
       dbsum.show
-      println("Parquet:  Count = " + pqcnt.toString)
+      println("Parquet:   Count = " + pqcnt.toString)
       pqsum.show
     })
   }
