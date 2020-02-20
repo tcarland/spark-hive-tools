@@ -2,7 +2,7 @@ spark-hive-tools
 ================
 
 
-##### Overview
+## Overview
 
 Provides convenient Scala functions for interacting or performing common operations
 on Hive tables.
@@ -13,8 +13,8 @@ on Hive tables.
  * HiveTableMeta    - Create a file of table meta statements for a given database.
  * DBTableLocations - Compare external table locations with parent db location.
 
-
-##### HiveTableSwapper
+---
+## HiveTableSwapper
 
 A tool intended for the post-injestion process of moving a new table into place of
 an existing table; optionally allowing for a table repartition in the process.
@@ -71,13 +71,13 @@ r=$?
 return $r
 ```
 
-##### ParquetValidate
+## ParquetValidate
 
  Iterates on a Parquet Table's Partitions and reports on any missing columns, usually
 a result of schema evolution feature in Parquet.
 
 
-##### DbValidate
+## DbValidate
 
 Compares the columns of an external database table (via JDBC) to a given Hive Table
 with the option of comparing column values by running a sum of n cols aross y rows.
@@ -106,7 +106,7 @@ run the test.
 Note that scripts should be run relative to the project root directory.
 
 
-##### HiveTableMeta
+## HiveTableMeta
 
 Creates a key/value file of *table_name* to the db *create table* statement. This
 can be useful to create a backup of the table metadata. The resulting file can be
@@ -115,10 +115,10 @@ for cloud environments, for instance, in Azure, using ADLS endpoints for
 external tables would need their endpoint HDFS locations modified when tables are
 copied elsewhere. Note that CDH BDR(distcp) does not support ADLS source/targets.
 
-##### DBTableLocations
+## DBTableLocations
 
 A good Hive warehouse practice is to locate all tables under a common db path.
-This should be true whether or not tables are marked as External or Unmanaged.
+This should be true whether or not tables are marked as External (Unmanaged).
 This app simply compares table locations with db locations and prints any
-mismatches in location where the table sits physically out of the parent
-database location.
+mismatches in location where a table sits physically out of the parent
+database path.
