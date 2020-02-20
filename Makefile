@@ -1,9 +1,8 @@
 
 
+all: target test
 
-all: spark-hive-tools test
-
-spark-hive-tools:
+target:
 	( mvn package )
 
 test:
@@ -15,3 +14,4 @@ clean:
 distclean: clean
 
 install:
+
