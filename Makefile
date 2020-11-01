@@ -1,4 +1,5 @@
-
+# Makefile
+#  Wrapping mvn build commands
 
 all: target test
 
@@ -14,4 +15,3 @@ clean:
 distclean: clean
 
 install:
-

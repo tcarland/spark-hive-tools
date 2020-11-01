@@ -1,11 +1,10 @@
 spark-hive-tools
 ================
 
-
 ## Overview
 
-Provides convenient Scala functions for interacting or performing common operations
-on Hive tables.
+Provides convenient Scala functions for interacting or performing operations
+on Hive tables via Spark2.
 
  * HiveTableSwapper - Move tables with an optional re-partition.
  * ParquetValidate  - Compare schemas across parquet partitions (ie. schema evolution).
@@ -16,15 +15,15 @@ on Hive tables.
 ---
 ## HiveTableSwapper
 
-A tool intended for the post-injestion process of moving a new table into place of
-an existing table; optionally allowing for a table repartition in the process.
+A tool intended for the post-injestion process of moving a new table into place
+of an existing table; optionally allowing for a table repartition in the process.
 
 More specifically, in some RDMS environments, a given schema design may lack an
 obvious column to split-by or a column that can be relied on for running incremental
 exports.  In the case where a given table is not so large, it can be relatively
 cheap enough to ingest the entire table and then swap the table in place.  
 
-Sqoop also has the issue of partitioning with split columns that are not evenly
+Sqoop often has the issue of partitioning with split columns that are not evenly
 distributed. Without a column that can be used for ranged queries, the resulting
 sqoop import ends up with unbalanced partitions. This tool allows for an optional
 re-partition of a table via Spark, using its *HashedPartitioner*, that will
@@ -37,20 +36,20 @@ Impala.  Notably, any use of .saveAsTable() including APPEND mode will rewrite
 the metadata. To avoid this, we first run CREATE TABLE via Hive and then
 use DataSet.insertInto() versus DataSet.saveAsTable().
 
- - NOTE: Renaming a Table via ALTER TABLE is only cheap if the table is not moving
-databases. It is best to *not* use a different schema/db name between the source and
-destination tables, as the RENAME operation may result in a full copy.
-HiveTableSwapper, in fact, assumes this to be true and only modifies the Hive
-physical LOCATION to account for the new table name, but does not consider the
-dbname within the location. If different databases were used with this, the table
-would end up in the wrong HDFS location.
+ - NOTE: Renaming a Table via ALTER TABLE is only cheap if the table is not
+moving databases. It is best to *not* use a different schema/db name between
+the source and destination tables, as the RENAME operation may result in a full
+copy. HiveTableSwapper, in fact, assumes this to be true and only modifies the
+Hive physical LOCATION to account for the new table name, but does not consider
+the dbname within the location. If different databases were used with this, the
+table would end up in the wrong HDFS location.
 
- - NOTE: The repartitioning step rewrites the source table via Spark into a
+ - NOTE: The re-partitioning step rewrites the source table via Spark into a
  temporary table that is then renamed to the destination.
 
 Sqoop example:
 ```
-#!/bin/bash
+#!/usr/bin/env bash
 
 DBUSER="$1"
 DBPASSFILE="$2"
@@ -73,23 +72,23 @@ return $r
 
 ## ParquetValidate
 
- Iterates on a Parquet Table's Partitions and reports on any missing columns, usually
-a result of schema evolution feature in Parquet.
+ Iterates on a Parquet Table's Partitions and reports on any missing columns,
+usually a result of schema change or evolution feature in Parquet.
 
 
 ## DbValidate
 
-Compares the columns of an external database table (via JDBC) to a given Hive Table
-with the option of comparing column values by running a sum of n cols aross y rows.
+Compares the columns of an external database table (via JDBC) to a given Hive
+Table with the option of comparing column values by running a sum of n cols
+across y rows.
 
-**Testing DbValidate**
+### Testing DbValidate
 
 To build the test jar, first compile via ***mvn package && mvn scala:testCompile***
 followed by running the script ***src/test/resources/build-test-jar.sh***.
 
-The test for DBValidate uses a Mysql instance to run the comparison. The
+The test for DBValidate uses a mysql instance to run the comparison. The
 following will seed the test data in both MySQL and Hive for running the test app.
-
 ```
   $ mysql -u root -p < src/test/resources/sht-mysql-init.sql
   $ hadoop fs -put src/test/resources/sht_data1.csv
@@ -108,17 +107,40 @@ Note that scripts should be run relative to the project root directory.
 
 ## HiveTableMeta
 
-Creates a key/value file of *table_name* to the db *create table* statement. This
-can be useful to create a backup of the table metadata. The resulting file can be
-used to recreate table metadata in a different environment. This can be useful
-for cloud environments, for instance, in Azure, using ADLS endpoints for
-external tables would need their endpoint HDFS locations modified when tables are
-copied elsewhere. Note that CDH BDR(distcp) does not support ADLS source/targets.
+Creates a key/value file of *table_name* to the db *create table* statement.
+This can be useful to create a backup of the table metadata. The resulting file
+can be used to recreate table metadata in a different environment. This can be
+useful for cloud environments, for instance, in Azure, using ADLS endpoints for
+external tables would need their endpoint HDFS locations modified when tables
+are copied elsewhere. Note that CDH BDR(distcp) does not support ADLS
+source/targets (as of CDH5/6.0?).
+
 
 ## DBTableLocations
 
 A good Hive warehouse practice is to locate all tables under a common db path.
-This should be true whether or not tables are marked as External (Unmanaged).
+This should be true whether or not tables are marked as `external` (unmanaged).
 This app simply compares table locations with db locations and prints any
 mismatches in location where a table sits physically out of the parent
 database path.
+
+# Installing
+
+Building the project creates the jar *package* via `mvn package`.
+
+For simple use, the package can be added to the local Maven repository
+by using the `install-file` plugin.
+```
+mvn install:install-file -Dpackaging=jar -DgroupId=com.trace3.spark.hive \
+ -DartifactId=spark-hive-tools -Dversion=0.3.0 \
+ -Dfile=target/spark-hive-tools-0.3.0.jar
+```
+
+Maven Artifact:
+```
+<dependency>
+  <groupId>com.trace3.spark.hive</groupId>
+  <artifactId>spark-hive-tools</artifactId>
+  <version>0.3.0</version>
+</dependency>
+```
