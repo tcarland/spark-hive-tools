@@ -8,7 +8,10 @@ import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.SaveMode
 import org.apache.spark.sql.types._
 import org.apache.hadoop.fs.{FileSystem, FileUtil, Path}
+import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.io.IOUtils
 
+import scala.util.Try
 import scala.collection.immutable.{List, Map}
 
 import hive.HiveFunctions
@@ -75,6 +78,35 @@ object HiveTableMeta {
     nextOpt(args, Map())
   }
 
+  /** Function to merge the resulting output of the SaveMeta operations */
+  def CopyMergeFiles ( srcFs: FileSystem, srcDir: Path, 
+                       dstFs: FileSystem, dstFile: Path,
+                       delSrc: Boolean, conf: Configuration) : Boolean = 
+  {
+    if ( dstFs.exists(dstFile) )
+      return false
+
+    if ( srcFs.getFileStatus(srcDir).isDirectory() ) {
+      val outFile = dstFs.create(dstFile)
+      Try {
+        srcFs.listStatus(srcDir)
+          .sortBy(_.getPath.getName)
+          .collect {
+            case status if status.isFile() =>
+              val inFile = srcFs.open(status.getPath())
+              Try(IOUtils.copyBytes(inFile, outFile, conf, false))
+              inFile.close()
+          }
+      }
+      outFile.close()
+
+      if ( delSrc )
+        srcFs.delete(srcDir, true)
+      else
+        true
+    } 
+    false
+  }
 
 
   def SaveTableMeta ( spark: SparkSession, optMap: OptMap ) : Unit = {
@@ -101,9 +133,9 @@ object HiveTableMeta {
 
     meta.toSeq.toDF.write.csv(tmpOut)
 
-    if ( FileUtil.copyMerge(hdfs, new Path(tmpOut),
-                            hdfs, new Path(outFile),
-                            false, hconf, null) )
+    if ( CopyMergeFiles(hdfs, new Path(tmpOut),
+                        hdfs, new Path(outFile),
+                        false, hconf) )
     {
       hdfs.delete(new Path(tmpOut), true)
     }
@@ -165,9 +197,9 @@ object HiveTableMeta {
 
     meta.toSeq.toDF.write.csv(tmpOut)
 
-    if ( FileUtil.copyMerge(hdfs, new Path(tmpOut),
-                            hdfs, new Path(outFile),
-                            false, hconf, null) )
+    if ( CopyMergeFiles(hdfs, new Path(tmpOut),
+                        hdfs, new Path(outFile),
+                        false, hconf) )
     {
       hdfs.delete(new Path(tmpOut), true)
     }
