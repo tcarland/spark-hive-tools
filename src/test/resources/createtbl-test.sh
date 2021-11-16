@@ -4,7 +4,7 @@
 #
 
 
-APP_JAR="target/spark-hive-tools-test-0.2.8.jar"
+APP_JAR="target/spark-hive-tools-test-0.4.1.jar"
 APP_CLASS="HiveCreateTblTest"
 
 
