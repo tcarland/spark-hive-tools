@@ -4,7 +4,7 @@
 #
 
 
-APP_JAR="target/spark-hive-tools-test-0.4.1.jar"
+APP_JAR="target/spark-hive-tools-test-0.4.2.jar"
 APP_CLASS="SHTTestInit"
 
 spark-submit --master yarn \
