@@ -48,7 +48,7 @@ object HiveFunctions {
     */
   def GetCreateTableString ( spark: SparkSession, table: String ) : String = {
     val createstr = spark.sql("SHOW CREATE TABLE " + table)
-      .first
+      .first()
       .getAs[String]("createtab_stmt")
       .replaceAll("\n", " ")
       .replaceAll("  ", " ")
@@ -67,7 +67,8 @@ object HiveFunctions {
    **/
   def GetCreateTableStrings ( spark: SparkSession, dbname: String ) : Array[(String, String)] = {
     import spark.implicits._
-    val locations = spark.catalog.listTables(dbname).collect
+    val locations = spark.catalog.listTables(dbname)
+      .collect()
       .map( table => {
         val fqtn  = table.database + "." + table.name
         val cstr  = HiveFunctions.GetCreateTableString(spark, fqtn)
@@ -114,10 +115,10 @@ object HiveFunctions {
   def GetDatabaseLocationURI ( spark: SparkSession, dbname: String ) : String = {
     import spark.implicits._
 
-    spark.catalog.listDatabases
+    spark.catalog.listDatabases()
       .select($"locationUri")
       .where($"name" === GetDBName(dbname))
-      .first
+      .first()
       .getAs[String]("locationUri")
   }
 

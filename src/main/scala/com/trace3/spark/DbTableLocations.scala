@@ -26,7 +26,7 @@ object DbTableLocations {
     val tables = spark.catalog.listTables(dbname)
       .select($"name")
       .where($"tableType" === "EXTERNAL")
-      .collect
+      .collect()
 
     val dbloc  = HiveFunctions.GetDatabaseLocationURI(spark, dbname);
     println(" ==> Database Location: " + dbloc)
@@ -56,13 +56,13 @@ object DbTableLocations {
       .builder()
       .appName("spark-hive-tools::DbTableLocations")
       .enableHiveSupport()
-      .getOrCreate
+      .getOrCreate()
 
     spark.sparkContext.setLogLevel("WARN")
 
     DbTableLocations.CheckTableLocations(spark, dbname)
 
     println(" ==> Finished.")
-    spark.stop
+    spark.stop()
   }
 }

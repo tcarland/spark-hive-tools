@@ -11,7 +11,7 @@ import org.apache.spark.sql.types._
 import org.apache.spark.sql.functions._
 import scala.util.matching.Regex
 
-import hive.HiveFunctions
+import com.trace3.spark.hive.HiveFunctions
 
 
 /**  The HiveTableSwapper is intended to move an existing Hive table to a new table with
@@ -102,7 +102,7 @@ object HiveTableSwapper {
       .builder()
       .appName("spark-hive-tools::HiveTableSwapper")
       .enableHiveSupport()
-      .getOrCreate
+      .getOrCreate()
 
     spark.sparkContext.setLogLevel("WARN")
     spark.sqlContext.setConf("spark.sql.hive.convertMetastoreParquet", "false")
@@ -112,6 +112,6 @@ object HiveTableSwapper {
 
     SwapTable(spark, src, dst, np, splt)
 
-    spark.stop
+    spark.stop()
   }
 }
