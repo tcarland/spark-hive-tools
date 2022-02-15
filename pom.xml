@@ -8,9 +8,9 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.trace3.spark</groupId>
     <artifactId>spark-hive-tools</artifactId>
-    <version>0.4.1_${scala.binary.version}</version>
+    <version>0.5.0_${scala.binary.version}</version>
     <packaging>jar</packaging>
-    <description>HiveTableSwapper and other hive tools via Spark</description>
+    <description>A collection of hive tools for Spark</description>
     <name>spark-hive-tools</name>
     <organization>
   	    <name>trace3.com</name>
@@ -24,14 +24,22 @@
         </developer>
     </developers>
 
+    <distributionManagement>
+        <repository>
+            <id>tca-github</id>
+            <name>tca-maven</name>
+            <url>https://maven.pkg.github.com/tcarland/spark-hive-tools</url>
+        </repository>
+    </distributionManagement>
+
     <properties>
         <encoding>UTF-8</encoding>
         <hadoop.version>3.3.1</hadoop.version>
-        <hbase.version>1.3.3</hbase.version>
+        <hbase.version>2.4.8</hbase.version>
         <hive.version>3.1.2</hive.version>
-        <scala.version>2.12.15</scala.version>
-        <scala.binary.version>2.12</scala.binary.version>
-        <spark.version>3.1.2</spark.version>
+        <scala.version>2.13.5</scala.version>
+        <scala.binary.version>2.13</scala.binary.version>
+        <spark.version>3.2.1</spark.version>
     </properties>
 
     <profiles>
@@ -39,14 +47,14 @@
             <id>scala-2.12</id>
             <properties>
                 <scala.binary.version>2.12</scala.binary.version>
-                <scala.version>2.12.55</scala.version>
+                <scala.version>2.12.15</scala.version>
             </properties>
         </profile>
         <profile>
             <id>scala-2.13</id>
             <properties>
                 <scala.binary.version>2.13</scala.binary.version>
-                <scala.version>2.13.7</scala.version>
+                <scala.version>2.13.8</scala.version>
             </properties>
         </profile>
     </profiles>
@@ -106,37 +114,18 @@
 
     <build>
         <plugins>
-            <!--
-            <plugin>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <version>3.3.0</version>
-                <configuration>
-                    <descriptorRefs>
-                        <descriptorRef>jar-with-dependencies</descriptorRef>
-                    </descriptorRefs>
-                </configuration>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.1</version>
                 <configuration>
-                    <release>11</release>
+                    <release>8</release>
                     <showDeprecation>true</showDeprecation>
                 </configuration>
             </plugin>
             <plugin>
                 <groupId>org.scala-tools</groupId>
-                <artifactId>scala-maven-plugin</artifactId>
+                <artifactId>maven-scala-plugin</artifactId>
                 <version>2.15.2</version>
                 <configuration>
                     <args>

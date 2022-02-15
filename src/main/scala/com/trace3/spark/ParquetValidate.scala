@@ -88,13 +88,13 @@ object ParquetValidate {
       .builder()
       .appName("spark-hive-tools::ParquetValidate")
       .enableHiveSupport()
-      .getOrCreate
+      .getOrCreate()
       
     spark.sparkContext.setLogLevel("WARN")
 
     ParquetValidate.Validate(spark, table)
 
     println(" => Finished.")
-    spark.stop
+    spark.stop()
   }
 }

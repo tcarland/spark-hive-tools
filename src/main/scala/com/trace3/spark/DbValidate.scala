@@ -152,7 +152,7 @@ object DbValidate {
         System.err.println(usage)
         System.exit(1)
       }
-      spark.sparkContext.textFile(pwfile).collect.head
+      spark.sparkContext.textFile(pwfile).collect().head
     } else {
       pass
     }
@@ -202,24 +202,24 @@ object DbValidate {
       // First JDBC Query with SELECT *
       val sql   = pushdownQuery(extDF.schema(dbkey), "", "", dbtable, sumcols, "dbval")
       val dbdf  = spark.read.jdbc(url, sql, props)
-      val dbcnt = dbdf.count
+      val dbcnt = dbdf.count()
       dbdf.createOrReplaceTempView("extdataset")
 
       // Second JDBC Query to perform sums
       val sql2  = pushdownQuery(extDF.schema(dbkey), "", addkey, "extdataset", sumcols)
       val dbsum = spark.sql(sql2)
-        .select(dcols.head, dcols.tail: _*)
+        .select(dcols.head, dcols.tail.toIndexedSeq: _*)
         .withColumn("SUM", sumcols.map(c => col(c)).reduce((c1,c2) => c1+c2).alias("SUMS"))
         .limit(nrows)
 
       // Read the parquet partition directly
       val pqdf  = spark.read.parquet(path.toUri.toString)
-      val pqcnt = pqdf.count
+      val pqcnt = pqdf.count()
       pqdf.createOrReplaceTempView("hivedataset")
 
       val sql3  = pushdownQuery(null, "", addkey, "hivedataset", sumcols)
       val pqsum = spark.sql(sql3)
-        .select(sumcols.head, sumcols.tail: _*)
+        .select(sumcols.head, sumcols.tail.toIndexedSeq: _*)
         .withColumn("SUM", sumcols.map(c => col(c)).reduce((c1,c2) => c1+c2).alias("SUMS"))
         .limit(nrows)
 
@@ -228,9 +228,9 @@ object DbValidate {
       println(" Hive QUERY 3: " + sql3)
       println("\n Partition: " + keycol + "=" + keyval)
       println("External:  Count = " + dbcnt.toString)
-      dbsum.show
+      dbsum.show()
       println("Parquet:   Count = " + pqcnt.toString)
-      pqsum.show
+      pqsum.show()
     })
   }
 
@@ -247,7 +247,7 @@ object DbValidate {
     DbValidate.validate(spark, optMap, optList)
 
     println(" => Finished.")
-    spark.stop
+    spark.stop()
   } // main
 
 } // object DbValidate

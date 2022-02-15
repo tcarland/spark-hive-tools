@@ -131,7 +131,7 @@ object HiveTableMeta {
 
     val meta = HiveFunctions.GetCreateTableStrings(spark, dbname)
 
-    meta.toSeq.toDF.write.csv(tmpOut)
+    meta.toSeq.toDF().write.csv(tmpOut)
 
     if ( CopyMergeFiles(hdfs, new Path(tmpOut),
                         hdfs, new Path(outFile),
@@ -174,7 +174,7 @@ object HiveTableMeta {
 
     val meta : Array[(String, String)] = spark.read.schema(metaSchema)
       .csv(inFile)
-      .collect
+      .collect()
       .map( row => {
         val createStr = row(1).toString
         val newstr = if ( createStr.contains("EXTERNAL") ) {
@@ -195,7 +195,7 @@ object HiveTableMeta {
         ( row(0).toString, newstr )
       })
 
-    meta.toSeq.toDF.write.csv(tmpOut)
+    meta.toSeq.toDF().write.csv(tmpOut)
 
     if ( CopyMergeFiles(hdfs, new Path(tmpOut),
                         hdfs, new Path(outFile),
@@ -212,7 +212,7 @@ object HiveTableMeta {
 
     spark.read.schema(metaSchema)
       .csv(inFile)
-      .collect
+      .collect()
       .foreach( row => {
         val createStr = row(1).toString
         spark.sql(createStr)
@@ -246,21 +246,21 @@ object HiveTableMeta {
 
     val tbls = spark.catalog
       .listTables(dbname)
-      .collect
+      .collect()
       .map( table => {
         val df = spark.read.table(table.database + "." + table.name)
-        val cnt = df.count
+        val cnt = df.count()
         TableMeta(table.name, table.database, table.tableType, table.isTemporary, cnt)
       })
       .toSeq
-      .toDS
+      .toDS()
 
     tbls.write
       .format("parquet")
       .mode(SaveMode.Append)
       .insertInto(mtbl)
 
-    tbls.show
+    tbls.show()
   }
 
 
@@ -282,7 +282,7 @@ object HiveTableMeta {
       .builder()
       .appName("spark-hive-tools::HiveTableMeta")
       .enableHiveSupport()
-      .getOrCreate
+      .getOrCreate()
 
     spark.sparkContext.setLogLevel("WARN")
 
@@ -300,6 +300,6 @@ object HiveTableMeta {
       System.err.println(" => Action not recognized.")
 
     println(" => Finished.")
-    spark.stop
+    spark.stop()
   }
 }
