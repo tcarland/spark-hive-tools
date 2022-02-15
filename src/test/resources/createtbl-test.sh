@@ -3,7 +3,6 @@
 #  Spark submit script for the HiveCreateTblTest
 #
 
-
 APP_JAR="target/spark-hive-tools-test-0.5.0.jar"
 APP_CLASS="HiveCreateTblTest"
 

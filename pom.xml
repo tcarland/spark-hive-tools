@@ -10,7 +10,7 @@
     <artifactId>spark-hive-tools</artifactId>
     <version>0.5.0_${scala.binary.version}</version>
     <packaging>jar</packaging>
-    <description>HiveTableSwapper and other hive tools via Spark</description>
+    <description>A collection of hive tools for Spark</description>
     <name>spark-hive-tools</name>
     <organization>
   	    <name>trace3.com</name>

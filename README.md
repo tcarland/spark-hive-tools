@@ -39,7 +39,7 @@ including APPEND mode will rewrite the metadata. To avoid this, we first
 run `CREATE TABLE` via Hive and then use *DataSet.insertInto()* versus 
 *DataSet.saveAsTable()*.
 
- - NOTE: Renaming a Table via `ALTER TABLE` is only cheap if the table is 
+- NOTE: Renaming a Table via `ALTER TABLE` is only cheap if the table is 
   not moving databases. It is best to *not* use a different schema/db name 
   between the source and destination tables, as the *RENAME* operation may 
   result in a full copy. HiveTableSwapper, in fact, assumes this to be true 
@@ -48,11 +48,12 @@ run `CREATE TABLE` via Hive and then use *DataSet.insertInto()* versus
   databases were used with this, the table would end up in the wrong HDFS 
   location.
 
- - NOTE: The re-partitioning step rewrites the source table via Spark into a
-   temporary table that is then renamed to the destination.
+- NOTE: The re-partitioning step rewrites the source table via Spark into a
+  temporary table that is then renamed to the destination.
+
 
 Sqoop example:
-```
+```bash
 #!/usr/bin/env bash
 
 DBUSER="$1"
@@ -74,6 +75,7 @@ r=$?
 return $r
 ```
 
+
 ## ParquetValidate
 
  Iterates on a Parquet Table's Partitions and reports on any missing columns,
@@ -85,6 +87,7 @@ usually a result of schema change or evolution feature in Parquet.
 Compares the columns of an external database table (via JDBC) to a given Hive
 Table with the option of comparing column values by running a sum of n cols
 across y rows.
+
 
 ### Testing DbValidate
 
@@ -128,6 +131,7 @@ This app simply compares table locations with db locations and prints any
 mismatches in location where a table sits physically out of the parent
 database path.
 
+
 # Installing
 
 Building the project creates the jar *package* via `mvn package`.
@@ -136,15 +140,31 @@ For simple use, the package can be added to the local Maven repository
 by using the `install-file` plugin.
 ```
 mvn install:install-file -Dpackaging=jar -DgroupId=com.trace3.spark.hive \
- -DartifactId=spark-hive-tools -Dversion=0.3.0 \
- -Dfile=target/spark-hive-tools-0.3.0.jar
+ -DartifactId=spark-hive-tools -Dversion=0.5.0 \
+ -Dfile=target/spark-hive-tools-0.5.0.jar
+```
+
+The project has a GitHub-based Maven Repository, which would need an entry 
+to either maven settings or the project pom. Currently, GitHub requires 
+authentication for its [Packages](https://docs.github.com/en/packages) project.
+```xml
+  <repositories>
+      <repository>
+          <id>spark-hbase-client</id>
+          <url>https://maven.pkg.github.com/tcarland/spark-hive-tools</url>
+      </repository>
+  </repositories>
 ```
 
 Maven Artifact:
-```
-<dependency>
-  <groupId>com.trace3.spark.hive</groupId>
-  <artifactId>spark-hive-tools</artifactId>
-  <version>0.3.0</version>
-</dependency>
+```xml
+  <properties>
+      <scala.binary.version>2.13</scala.binary.version>
+      <scala.version>2.13.5</scala.version>
+  </properties>
+  <dependency>
+    <groupId>com.trace3.spark.hive</groupId>
+    <artifactId>spark-hive-tools</artifactId>
+    <version>0.5.0_${scala.binary.version}</version>
+  </dependency>
 ```
