@@ -140,8 +140,8 @@ For simple use, the package can be added to the local Maven repository
 by using the `install-file` plugin.
 ```
 mvn install:install-file -Dpackaging=jar -DgroupId=com.trace3.spark.hive \
- -DartifactId=spark-hive-tools -Dversion=0.5.0 \
- -Dfile=target/spark-hive-tools-0.5.0.jar
+ -DartifactId=spark-hive-tools -Dversion=0.5.1 \
+ -Dfile=target/spark-hive-tools-0.5.1.jar
 ```
 
 The project has a GitHub-based Maven Repository, which would need an entry 
@@ -165,6 +165,6 @@ Maven Artifact:
   <dependency>
     <groupId>com.trace3.spark.hive</groupId>
     <artifactId>spark-hive-tools</artifactId>
-    <version>0.5.0_${scala.binary.version}</version>
+    <version>0.5.1_${scala.binary.version}</version>
   </dependency>
 ```
