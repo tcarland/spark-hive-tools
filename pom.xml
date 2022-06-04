@@ -8,7 +8,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.trace3.spark</groupId>
     <artifactId>spark-hive-tools</artifactId>
-    <version>0.5.1_${scala.binary.version}</version>
+    <version>0.5.2_${scala.binary.version}</version>
     <packaging>jar</packaging>
     <description>A collection of hive tools for Spark</description>
     <name>spark-hive-tools</name>
@@ -119,7 +119,7 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.1</version>
                 <configuration>
-                    <release>8</release>
+                    <release>11</release>
                     <showDeprecation>true</showDeprecation>
                 </configuration>
             </plugin>
