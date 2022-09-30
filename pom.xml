@@ -37,7 +37,7 @@
         <hadoop.version>3.3.1</hadoop.version>
         <hbase.version>2.4.8</hbase.version>
         <hive.version>3.1.2</hive.version>
-        <scala.version>2.13.5</scala.version>
+        <scala.version>2.13.9</scala.version>
         <scala.binary.version>2.13</scala.binary.version>
         <spark.version>3.2.1</spark.version>
     </properties>
