@@ -23,7 +23,7 @@ import com.trace3.spark.hive.HiveFunctions
   *  column will result in unbalanced partitions, so this tool can be useful for such
   *  occasions.
   *
-  * Created by tcarland@gmail.com on 11/17/16
+  * Created by tcarland@gmail.com on 11/17/2016
  **/
 object HiveTableSwapper {
 

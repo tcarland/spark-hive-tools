@@ -5,6 +5,6 @@
 
 echo "Building Test Jar..."
 
-( jar -cvf target/spark-hive-tools-test-0.6.1.jar -C target/classes . -C target/test-classes . )
+( jar -cvf target/spark-hive-tools-test-0.6.2.jar -C target/classes . -C target/test-classes . )
 
 exit $?
