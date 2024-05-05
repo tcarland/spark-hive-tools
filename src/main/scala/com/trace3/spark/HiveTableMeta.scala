@@ -236,14 +236,14 @@ object HiveTableMeta {
     if ( reset )
       spark.sql(s"DROP TABLE IF EXISTS $mtbl")
 
-    spark.sql(
-      s"CREATE TABLE IF NOT EXISTS $mtbl (
+    spark.sql(s"""
+      CREATE TABLE IF NOT EXISTS $mtbl (
           name STRING,
           dbname STRING,
           tableType STRING,
           isTemp BOOLEAN,
           rowcnt BIGINT
-      ) STORED AS parquet"
+      ) STORED AS parquet"""
     )
 
     val tbls = spark.catalog

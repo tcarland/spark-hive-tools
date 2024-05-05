@@ -28,7 +28,7 @@ object HiveCreateTblTest {
       .builder()
       .appName("spark-hive-tools::HiveCreateTblTest")
       .enableHiveSupport()
-      .getOrCreate
+      .getOrCreate()
     import spark.implicits._
 
     spark.sqlContext.setConf("spark.sql.parquet.compression.codec", "snappy")
@@ -39,9 +39,9 @@ object HiveCreateTblTest {
 
     // LIST ALL TABLES EVERYWHERE!
     println("Metastore Tables:")
-    spark.catalog.listDatabases
+    spark.catalog.listDatabases()
       .select($"name", $"locationUri")
-      .collect
+      .collect()
       .foreach( row => {
         val name = row.getAs[String]("name")
         if ( ! name.isEmpty ) {
@@ -61,7 +61,7 @@ object HiveCreateTblTest {
 
     println("  ================== ")
     println("  ==>  BEFORE: ")
-    println(s"  ==> $rcsql")
+    println(s"  ==> $srcsql")
 
     val target = src + suffix
 

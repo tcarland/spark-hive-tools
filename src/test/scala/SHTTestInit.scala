@@ -26,7 +26,7 @@ object SHTTestInit {
       .builder()
       .appName("SHTTestInit")
       .enableHiveSupport()
-      .getOrCreate
+      .getOrCreate()
 
 
     val host    = args(0)
@@ -69,8 +69,8 @@ object SHTTestInit {
     // write to hive table
     val df2 = spark.read.schema(schema).option("header", true).csv("sht_data2.csv")
     spark.sql(s"DROP TABLE IF EXISTS $hvtable")
-    spark.sql(
-      s"CREATE TABLE $hvtable ()
+    spark.sql(s"""
+      CREATE TABLE $hvtable ()
           FLOWID BIGINT,
           DSTADDR STRING,
           DSTPFX STRING,
@@ -86,7 +86,7 @@ object SHTTestInit {
           TIME TIMESTAMP,
           FLOWKEY BIGINT
       ) USING parquet OPTIONS ( `serialization.format` '1' ) 
-      PARTITIONED BY ( FLOWKEY )"
+      PARTITIONED BY ( FLOWKEY )"""
     )
     
     df2.write.format("parquet").mode(SaveMode.Append).insertInto(hvtable)
