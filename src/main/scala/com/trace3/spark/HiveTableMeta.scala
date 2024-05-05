@@ -187,7 +187,7 @@ object HiveTableMeta {
           val tblpath = loc match {
             case pat3(m1) => m1
           }
-          val newloc = s" LOCATION 'hdfs://" + host + "/" + tblpath + "' "
+          val newloc = s" LOCATION 'hdfs://$host/$tblpath' "
           ( ctbl + newloc + rest )
         } else {
           createStr
@@ -234,15 +234,17 @@ object HiveTableMeta {
     import spark.implicits._
 
     if ( reset )
-      spark.sql("DROP TABLE IF EXISTS " + mtbl)
+      spark.sql(s"DROP TABLE IF EXISTS $mtbl")
 
-    spark.sql("CREATE TABLE IF NOT EXISTS " + mtbl + " (" +
-      "name STRING, " +
-      "dbname STRING," +
-      "tableType STRING," +
-      "isTemp BOOLEAN, " +
-      "rowcnt BIGINT) " +
-      "STORED AS parquet")
+    spark.sql(
+      s"CREATE TABLE IF NOT EXISTS $mtbl (
+          name STRING,
+          dbname STRING,
+          tableType STRING,
+          isTemp BOOLEAN,
+          rowcnt BIGINT
+      ) STORED AS parquet"
+    )
 
     val tbls = spark.catalog
       .listTables(dbname)

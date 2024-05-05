@@ -72,12 +72,12 @@ object HiveTableSwapper {
     }
 
     try {
-      spark.sql("DROP TABLE IF EXISTS " + dstTable)
+      spark.sql(s"DROP TABLE IF EXISTS $dstTable")
     } catch {
       case _ : Throwable => 
     }
 
-    spark.sql("ALTER TABLE " + srctbl + " RENAME TO " + dstTable)
+    spark.sql(s"ALTER TABLE $srctbl RENAME TO $dstTable")
   }
 
 

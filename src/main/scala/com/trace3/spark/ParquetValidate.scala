@@ -54,9 +54,9 @@ object ParquetValidate {
       .filter(s => ! s.equalsIgnoreCase(keycol))
 
 
-    println(" => Path: " + pathstr)
+    println(s" => Path: $pathstr")
     println(" => Num Partition Directories: " + files.length.toString)
-    println(" => Partition Key: " + keycol)
+    println(s" => Partition Key: $keycol")
     print(" => Table Columns: < ")
     cols.foreach(s => print(s + ", "))
     println(">\n => Partitions  <missing columns>")

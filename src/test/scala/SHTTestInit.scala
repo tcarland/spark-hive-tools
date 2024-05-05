@@ -68,17 +68,29 @@ object SHTTestInit {
 
     // write to hive table
     val df2 = spark.read.schema(schema).option("header", true).csv("sht_data2.csv")
-    spark.sql("DROP TABLE IF EXISTS " + hvtable)
-    spark.sql("CREATE TABLE " + hvtable +
-              " (FLOWID BIGINT, DSTADDR STRING, DSTPFX STRING, DSTPORT INT, FLAGS STRING, " +
-              "BYTES BIGINT, PKTS BIGINT, PROTO INT, SRCADDR STRING, SRCPFX STRING, SRCPORT INT, " +
-              "STATE STRING, TIME TIMESTAMP, FLOWKEY BIGINT) USING parquet OPTIONS ( `serialization.format` '1' ) " +
-              "PARTITIONED BY ( FLOWKEY )")
+    spark.sql(s"DROP TABLE IF EXISTS $hvtable")
+    spark.sql(
+      s"CREATE TABLE $hvtable ()
+          FLOWID BIGINT,
+          DSTADDR STRING,
+          DSTPFX STRING,
+          DSTPORT INT,
+          FLAGS STRING,
+          BYTES BIGINT,
+          PKTS BIGINT,
+          PROTO INT,
+          SRCADDR STRING,
+          SRCPFX STRING,
+          SRCPORT INT, 
+          STATE STRING,
+          TIME TIMESTAMP,
+          FLOWKEY BIGINT
+      ) USING parquet OPTIONS ( `serialization.format` '1' ) 
+      PARTITIONED BY ( FLOWKEY )"
+    )
+    
     df2.write.format("parquet").mode(SaveMode.Append).insertInto(hvtable)
-
-    println("Finished.")
-
-    spark.stop
+    spark.stop()
   }
 
 }

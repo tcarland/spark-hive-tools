@@ -61,14 +61,14 @@ object HiveCreateTblTest {
 
     println("  ================== ")
     println("  ==>  BEFORE: ")
-    println("  ==> " + srcsql)
+    println(s"  ==> $rcsql")
 
     val target = src + suffix
 
     val tmpsql = HiveFunctions.CopyTableCreate(srcsql, target)
 
     println("\n  ==>  AFTER: ")
-    println("  ==> " + tmpsql)
+    println(s"  ==> $tmpsql")
     println("  ================== ")
 
     // Create a simple DataFrame, store into a partition directory
@@ -82,7 +82,6 @@ object HiveCreateTblTest {
 
     org.apache.hadoop.fs.FileSystem.get(spark.sparkContext.hadoopConfiguration)
       .delete(new Path("test.db"), true)
-
 
     spark.stop()
   }
