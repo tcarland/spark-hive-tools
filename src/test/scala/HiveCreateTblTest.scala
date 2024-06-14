@@ -28,7 +28,7 @@ object HiveCreateTblTest {
       .builder()
       .appName("spark-hive-tools::HiveCreateTblTest")
       .enableHiveSupport()
-      .getOrCreate
+      .getOrCreate()
     import spark.implicits._
 
     spark.sqlContext.setConf("spark.sql.parquet.compression.codec", "snappy")
@@ -39,9 +39,9 @@ object HiveCreateTblTest {
 
     // LIST ALL TABLES EVERYWHERE!
     println("Metastore Tables:")
-    spark.catalog.listDatabases
+    spark.catalog.listDatabases()
       .select($"name", $"locationUri")
-      .collect
+      .collect()
       .foreach( row => {
         val name = row.getAs[String]("name")
         if ( ! name.isEmpty ) {
@@ -61,14 +61,14 @@ object HiveCreateTblTest {
 
     println("  ================== ")
     println("  ==>  BEFORE: ")
-    println("  ==> " + srcsql)
+    println(s"  ==> $srcsql")
 
     val target = src + suffix
 
     val tmpsql = HiveFunctions.CopyTableCreate(srcsql, target)
 
     println("\n  ==>  AFTER: ")
-    println("  ==> " + tmpsql)
+    println(s"  ==> $tmpsql")
     println("  ================== ")
 
     // Create a simple DataFrame, store into a partition directory
@@ -82,7 +82,6 @@ object HiveCreateTblTest {
 
     org.apache.hadoop.fs.FileSystem.get(spark.sparkContext.hadoopConfiguration)
       .delete(new Path("test.db"), true)
-
 
     spark.stop()
   }

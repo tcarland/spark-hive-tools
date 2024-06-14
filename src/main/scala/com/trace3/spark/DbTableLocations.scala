@@ -29,15 +29,15 @@ object DbTableLocations {
       .collect()
 
     val dbloc  = HiveFunctions.GetDatabaseLocationURI(spark, dbname);
-    println(" ==> Database Location: " + dbloc)
+    println(s" ==> Database Location: $dbloc")
 
     tables.foreach( row => {
         val fqtn   = dbname + "." + row.getString(0)
         val tblloc = HiveFunctions.GetTableURI(spark, fqtn)
         if ( tblloc.contains(dbloc) ) {
-            println(" ==> match " + fqtn)
+            println(s" ==> match $fqtn")
         } else {
-            println(" ==> MISMATCH: " + fqtn + " = " + tblloc)
+            println(s" ==> MISMATCH: $fqtn = $tblloc")
         }
     })
 

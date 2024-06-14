@@ -40,13 +40,13 @@ run `CREATE TABLE` via Hive and then use *DataSet.insertInto()* versus
 *DataSet.saveAsTable()*.
 
 - NOTE: Renaming a Table via `ALTER TABLE` is only cheap if the table is 
-  not moving databases. It is best to *not* use a different schema/db name 
-  between the source and destination tables, as the *RENAME* operation may 
-  result in a full copy. HiveTableSwapper, in fact, assumes this to be true 
-  and only modifies the Hive physical *LOCATION* to account for the new table 
-  name, but does not consider the dbname within the location. If different 
-  databases were used with this, the table would end up in the wrong HDFS 
-  location.
+  not moving databases (name LOCATION). It is best to *not* use a different 
+  schema/db name between the source and destination tables, as the *RENAME* 
+  may result in a full copy. HiveTableSwapper, in fact, assumes this to be 
+  true and only modifies the Hive physical *LOCATION* to account for the new 
+  table name, but does not consider the dbname within the location. If 
+  different databases were used with this, the table would end up in the 
+  wrong HDFS location.
 
 - NOTE: The re-partitioning step rewrites the source table via Spark into a
   temporary table that is then renamed to the destination.
@@ -55,7 +55,6 @@ run `CREATE TABLE` via Hive and then use *DataSet.insertInto()* versus
 Sqoop example:
 ```bash
 #!/usr/bin/env bash
-
 DBUSER="$1"
 DBPASSFILE="$2"
 
@@ -69,12 +68,10 @@ sqoop import --connect jdbc:oracle:thin:@orapita-db:1521/dev_name_con -m 8 \
  --split-by=ACCT_NO --hive-import --hive-database=PBX
  --hive-table=PBX.GET_LIMIT_VTMP
  --username $DBUSER --password-file $DBPASSFILE
-
 r=$?
 
 return $r
 ```
-
 
 ## ParquetValidate
 
@@ -140,8 +137,8 @@ For simple use, the package can be added to the local Maven repository
 by using the `install-file` plugin.
 ```
 mvn install:install-file -Dpackaging=jar -DgroupId=com.trace3.spark.hive \
- -DartifactId=spark-hive-tools -Dversion=0.6.2 \
- -Dfile=target/spark-hive-tools-0.6.2.jar
+ -DartifactId=spark-hive-tools -Dversion=0.6.3 \
+ -Dfile=target/spark-hive-tools-0.6.3.jar
 ```
 
 The project has a GitHub-based Maven Repository, which would need an entry 

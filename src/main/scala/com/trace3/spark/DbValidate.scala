@@ -86,14 +86,14 @@ object DbValidate {
     var sql = ""
 
     if ( key == null || keyval.isEmpty ) {
-      sql = "(SELECT * FROM " + table
+      sql = s"(SELECT * FROM $table"
       if ( ! addkey.isEmpty )
-        sql += " WHERE " + addkey
+        sql += s" WHERE $addkey"
     } else if ( key != null ) {
-      sql = "(SELECT " + key.name
+      sql = s"(SELECT " + key.name
       if ( ! cols.isEmpty )
         cols.foreach(str => sql += (", " + str))
-      sql += (" FROM " + table + " WHERE " + key.name + " = ")
+      sql += s" FROM $table WHERE $key.name = "
 
       key.dataType match {
         case StringType    => sql += ("\"" + keyval + "\"")
@@ -103,17 +103,17 @@ object DbValidate {
             str = new Timestamp(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.S").parse(keyval).getTime).toString
           else
             str = new Timestamp(new SimpleDateFormat("yyyy-MM-dd").parse(keyval).getTime).toString
-          sql += "TIMESTAMP '" + str + "'"
+          sql += s"TIMESTAMP '$str'"
         }
         case _ => sql += keyval
       }
 
       if ( ! addkey.isEmpty )
-        sql += " AND " + addkey
+        sql += s" AND $addkey"
     }
 
     if ( ! sql.isEmpty )
-      sql += ") " + alias
+      sql += s") $alias"
 
     sql
   }
