@@ -172,21 +172,23 @@ object HiveFunctions {
 
   /** Generates a new CREATE TABLE sql statement from the provided
     * CREATE TABLE sql string with a new table name. This essentially copies
-    * the table schema from a current table. This intentionally does not
-    * include 'TBLPROPERTIES' for compatibility reasons and instead lets it
-    * be regenerated at CREATE.
+    * the table schema from a current table. This 'includeProps' allows for 
+    * removing 'TBLPROPERTIES' for compatibility reasons and instead lets it
+    * be regenerated automatically at CREATE.
     *
-    * TODO: Location is not db aware, which means copying tables from
-    * a different database (and location) may result with the new table in
+    * TODO: Location is not db/path aware, which means copying tables from
+    * a different schema (and location) may result with the new table in
     * the wrong directory.
    **/
-  def CopyTableCreate ( createsql: String, tableName: String ) : String = {
+  def CopyTableCreate ( createsql: String, 
+                        tableName: String, 
+                        includeProps: Boolean ) : String = {
     val pat1 = """(CREATE .*)( TBLPROPERTIES .*)""".r
     val pat2 = """(CREATE .*TABLE.* )(LOCATION\s+'.+').*""".r
     val pat3 = """(CREATE .*TABLE\s+)`(.+)`(\(.*)""".r
 
     // extract table properties
-    var (tbl, _) = createsql match {
+    var (tbl, props) = createsql match {
       case pat1(m1, m2) => (m1, m2)
     }
 
@@ -200,11 +202,26 @@ object HiveFunctions {
     }
 
     // set tableName
-    val (ctbl, _, rest) = tbl match {
+    var (ctbl, _, rest) = tbl match {
       case pat3(m1, m2, m3) => (m1, m2, m3)
     }
 
-    ctbl + " `" + tableName + "` " + rest
+    ctbl += " `" + tableName + "` " + rest
+    if ( includeProps )
+        ctbl += props
+    ctbl
   }
+
+
+  def SetClusterBy ( createStr: String, clusterBy: String ) : String = {
+    val pat1 = """(CREATE .*)( TBLPROPERTIES .*)""".r
+
+    val (tbl, props) = createStr match {
+        case pat1(m1, m2) => (m1, m2)
+    }
+
+    tbl + " " + createStr + " " + props
+  }
+
 
 }

@@ -8,7 +8,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.trace3.spark</groupId>
     <artifactId>spark-hive-tools</artifactId>
-    <version>0.6.4_${scala.binary.version}</version>
+    <version>0.6.5_${scala.binary.version}</version>
     <packaging>jar</packaging>
     <description>A collection of hive tools for Spark</description>
     <name>spark-hive-tools</name>
