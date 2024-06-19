@@ -55,7 +55,7 @@ object HiveCreateTblTest {
     val dbname = HiveFunctions.GetDBName(src)
 
     if ( dbname != null && dbname != "default" )
-      spark.catalog.listTables(dbname).show
+      spark.catalog.listTables(dbname).show()
 
     val srcsql = HiveFunctions.GetCreateTableString(spark, src)
 
@@ -65,7 +65,7 @@ object HiveCreateTblTest {
 
     val target = src + suffix
 
-    val tmpsql = HiveFunctions.CopyTableCreate(srcsql, target)
+    val tmpsql = HiveFunctions.CopyTableCreate(srcsql, target, false)
 
     println("\n  ==>  AFTER: ")
     println(s"  ==> $tmpsql")

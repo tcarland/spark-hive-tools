@@ -1,4 +1,4 @@
-/** ParquetValidate.scala
+/** HiveTableSwapper.scala
   *
   * @author Timothy C. Arland <tarland@trace3.com, tcarland@gmail.com>
  **/
@@ -23,10 +23,9 @@ import com.trace3.spark.hive.HiveFunctions
   *  column will result in unbalanced partitions, so this tool can be useful for such
   *  occasions.
   *
-  * Created by tcarland@gmail.com on 11/17/2016
+  * HiveTableSwapper by tcarland@gmail.com on 11/17/2016
  **/
 object HiveTableSwapper {
-
 
   val tableSuffix = "_tmphts"
 
@@ -40,7 +39,6 @@ object HiveTableSwapper {
       |==>     n_partitions  =  Optional number of partitions for the new table.
       |==>     partition_by  =  Optional name of the column to repartition by.
     """.stripMargin
-
 
 
   def SwapTable ( spark: SparkSession,
@@ -62,7 +60,7 @@ object HiveTableSwapper {
 
       val srcsql = HiveFunctions.GetCreateTableString(spark, srcTable)
       val tmptbl = srcTable + tableSuffix
-      val tmpsql = HiveFunctions.CopyTableCreate(srcsql, tmptbl)
+      val tmpsql = HiveFunctions.CopyTableCreate(srcsql, tmptbl, false)
 
       // create the temp table, insert, and remap the source table
       spark.sql(tmpsql)

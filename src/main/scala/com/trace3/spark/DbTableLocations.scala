@@ -29,7 +29,7 @@ object DbTableLocations {
       .collect()
 
     val dbloc  = HiveFunctions.GetDatabaseLocationURI(spark, dbname);
-    println(s" ==> Database Location: $dbloc")
+    println(s" ==> Database Schema Location: $dbloc")
 
     tables.foreach( row => {
         val fqtn   = dbname + "." + row.getString(0)

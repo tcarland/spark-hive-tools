@@ -31,7 +31,7 @@ object DbValidate {
     """
       |DbValidate [-dh] --jdbc <jdbc uri> --dbtable <db.table> --hive-table <db.table>
       |  --jdbc <uri>              : The JDBC string for connecting to external db.
-      |  --dbtable <db.table>      : Name of the source, external db schema.table
+      |  --dbtable <db.table>      : Name of the source external db as 'schema.table'
       |  --dbkey <keycolumn>       : Name of db column to match partition key
       |  --hive-table <db.table>   : Name of the Hive table to compare against
       |  --user <user>             : The external database username.

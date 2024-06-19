@@ -33,7 +33,8 @@ object HiveTableMeta {
 
   case class TableMeta (
       name      : String,
-      dbname    : String,
+      schema    : String,
+      catalog   : String,
       tableType : String,
       isTemp    : Boolean,
       rowcnt    : Long
@@ -43,7 +44,7 @@ object HiveTableMeta {
   val usage : String =
     """
       |Usage: HiveTableMeta [options] <action>
-      | --dbname <name>   : The name of the database to operate on.
+      | --schema <name>   : The name of the database|schema to operate on.
       | --inFile <file>   : The input csv file to use for 'savetarget' or 'restore.
       | --outFile <file>  : The output csv file for 'save' or 'savetarget'
       | --outTable <name> : Alternate name of table to write stats (default.tablestats)
@@ -112,7 +113,7 @@ object HiveTableMeta {
   def SaveTableMeta ( spark: SparkSession, optMap: OptMap ) : Unit = {
     import spark.implicits._
 
-    val dbname  = optMap.getOrElse("dbname", "")
+    val schema  = optMap.getOrElse("schema", "")
     val outFile = optMap.getOrElse("outFile", "")
     val tmpOut  = outFile + "-tmpout"
     val hconf   = spark.sparkContext.hadoopConfiguration
@@ -129,7 +130,7 @@ object HiveTableMeta {
       System.exit(1)
     }
 
-    val meta = HiveFunctions.GetCreateTableStrings(spark, dbname)
+    val meta = HiveFunctions.GetCreateTableStrings(spark, schema)
 
     meta.toSeq.toDF().write.csv(tmpOut)
 
@@ -221,11 +222,11 @@ object HiveTableMeta {
 
 
   def SaveTableStats ( spark: SparkSession, optMap: OptMap ) : Unit = {
-    val dbname = optMap.getOrElse("dbname", "")
+    val schema = optMap.getOrElse("schema", "")
     val mtbl   = optMap.getOrElse("outTable", "default.tablestats")
     val reset  = if ( optMap.contains("R") ) true else false
 
-    if ( dbname.isEmpty ) {
+    if ( schema.isEmpty ) {
       System.err.println(" ==> Error, invalid or missing options")
       System.err.println(usage)
       System.exit(1)
@@ -239,7 +240,8 @@ object HiveTableMeta {
     spark.sql(s"""
       CREATE TABLE IF NOT EXISTS $mtbl (
           name STRING,
-          dbname STRING,
+          schema STRING,
+          catalog STRING,
           tableType STRING,
           isTemp BOOLEAN,
           rowcnt BIGINT
@@ -247,12 +249,12 @@ object HiveTableMeta {
     )
 
     val tbls = spark.catalog
-      .listTables(dbname)
+      .listTables(schema)
       .collect()
       .map( table => {
         val df = spark.read.table(table.database + "." + table.name)
         val cnt = df.count()
-        TableMeta(table.name, table.database, table.tableType, table.isTemporary, cnt)
+        TableMeta(table.name, table.database, "", table.tableType, table.isTemporary, cnt)
       })
       .toSeq
       .toDS()
