@@ -27,7 +27,6 @@ import com.trace3.spark.hive.HiveFunctions
  **/
 object HiveTableSwapper {
 
-
   val tableSuffix = "_tmphts"
 
 
@@ -40,7 +39,6 @@ object HiveTableSwapper {
       |==>     n_partitions  =  Optional number of partitions for the new table.
       |==>     partition_by  =  Optional name of the column to repartition by.
     """.stripMargin
-
 
 
   def SwapTable ( spark: SparkSession,
