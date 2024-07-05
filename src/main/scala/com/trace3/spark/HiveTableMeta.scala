@@ -7,6 +7,7 @@ package com.trace3.spark
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.SaveMode
 import org.apache.spark.sql.types._
+
 import org.apache.hadoop.fs.{FileSystem, FileUtil, Path}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.io.IOUtils
@@ -42,20 +43,20 @@ object HiveTableMeta {
 
 
   val usage : String =
-    """
-      |Usage: HiveTableMeta [options] <action>
-      | --schema <name>   : The name of the database|schema to operate on.
-      | --inFile <file>   : The input csv file to use for 'savetarget' or 'restore.
-      | --outFile <file>  : The output csv file for 'save' or 'savetarget'
-      | --outTable <name> : Alternate name of table to write stats (default.tablestats)
-      | --namenode <ns>   : A namenode or nameservice name to use as the restore target
-      |  -R               : Reset dbstats table when running stats action
-      |    <action>       : The action to take should be: save|savetarget|restore|stats
+    s"""
+      |Usage: HiveTableMeta  [options]  <action>
+      | --schema   <name>  : The name of the db schema to operate on.
+      | --inFile   <file>  : The input csv file to use for 'savetarget' or 'restore.
+      | --outFile  <file>  : The output csv file for 'save' or 'savetarget'
+      | --outTable <name>  : Alternate name of table to write stats (default.tablestats)
+      | --namenode  <ns>   : A namenode or nameservice name to use as the restore target
+      |  -R                : Reset dbstats table when running stats action
+      |    <action>        : The action to take should be: save|savetarget|restore|stats
       |
-      |    'save'         : Write out the current table schemas to --outFile
-      |  'savetarget'     : Apply a new hdfs target to -inFile writing to --outFile
-      |   'restore'       : Restore a save file to the Hive Metastore
-      |    'stats'        : Write out db table stats to a meta table
+      |  'save'            : Write out the current table schemas to --outFile
+      |  'savetarget'      : Apply a new hdfs target to -inFile writing to --outFile
+      |  'restore'         : Restore a save file to the Hive Metastore
+      |  'stats'           : Write out db table stats to a meta table
     """.stripMargin
 
 
@@ -78,6 +79,7 @@ object HiveTableMeta {
 
     nextOpt(args, Map())
   }
+
 
   /** Function to merge the resulting output of the SaveMeta operations */
   def CopyMergeFiles ( srcFs: FileSystem, srcDir: Path, 
@@ -118,7 +120,6 @@ object HiveTableMeta {
     val tmpOut  = outFile + "-tmpout"
     val hconf   = spark.sparkContext.hadoopConfiguration
     val hdfs    = FileSystem.get(hconf)
-
 
     if ( hdfs.exists(new Path(outFile)) ) {
       System.err.println("Fatal Error: Output path already exists")
@@ -237,15 +238,17 @@ object HiveTableMeta {
     if ( reset )
       spark.sql(s"DROP TABLE IF EXISTS $mtbl")
 
-    spark.sql(s"""
-      CREATE TABLE IF NOT EXISTS $mtbl (
-          name STRING,
-          schema STRING,
-          catalog STRING,
-          tableType STRING,
-          isTemp BOOLEAN,
-          rowcnt BIGINT
-      ) STORED AS parquet"""
+    spark.sql(
+      s"""
+      |CREATE TABLE IF NOT EXISTS $mtbl (
+      |    name STRING,
+      |    schema STRING,
+      |    catalog STRING,
+      |    tableType STRING,
+      |    isTemp BOOLEAN,
+      |    rowcnt BIGINT
+      |) STORED AS parquet
+      """.stripMargin
     )
 
     val tbls = spark.catalog
