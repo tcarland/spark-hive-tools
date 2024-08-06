@@ -47,7 +47,7 @@ object HiveFunctions {
     * @return        The 'CREATE TABLE' statement
     */
   def GetCreateTableString ( spark: SparkSession, table: String ) : String = {
-    val createstr = spark.sql("SHOW CREATE TABLE " + table)
+    val createstr = spark.sql(s"SHOW CREATE TABLE $table")
       .first()
       .getAs[String]("createtab_stmt")
       .replaceAll("\n", " ")
@@ -123,10 +123,9 @@ object HiveFunctions {
   }
 
 
-  /**  Given the full Hive SHOW CREATE TABLE string, extract the
-    *  table location. Useful for determining the HDFS location of
-    *  an external table since there is no requirement to follow the
-    *  '/path/to/warehouse/schema.db/table/' semantic.
+  /**  Given the full SHOW CREATE TABLE string, this extracts the
+    *  table location. Useful for determining the FileSystem location 
+    *  of an external table.
     *
     * @param createStr  The Hive CREATE TABLE string
     * @return           The LOCATION target string
