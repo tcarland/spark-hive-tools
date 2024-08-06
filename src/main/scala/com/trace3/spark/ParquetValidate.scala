@@ -53,14 +53,12 @@ object ParquetValidate {
       .map(s => s.toUpperCase)
       .filter(s => ! s.equalsIgnoreCase(keycol))
 
-
-    println(s" => Path: $pathstr")
-    println(" => Num Partition Directories: " + files.length.toString)
-    println(s" => Partition Key: $keycol")
-    print(" => Table Columns: < ")
-    cols.foreach(s => print(s + ", "))
-    println(">\n => Partitions  <missing columns>")
-
+    println(s" -> Path: $pathstr")
+    println(s" -> Num Partition Directories: " + files.length.toString)
+    println(s" -> Partition Key: $keycol")
+    print(" -> Table Columns: < ")
+    cols.foreach(s => print(s"${s},"))
+    println(" -> Partitions  <missing columns>:")
 
     // Iterate on the Parquet Partitions and compare columns.
     files.foreach( path => {
@@ -68,8 +66,8 @@ object ParquetValidate {
         .parquet(path.toUri.toString)
         .columns.map(s => s.toUpperCase)
 
-      print("    " + path.getName + " < ")
-      cols.diff(colp).foreach(s => print(s + ", "))
+      print(s"    " + path.getName + " < ")
+      cols.diff(colp).foreach(s => print(s"${s}, "))
       println(" >")
     })
 

@@ -3,6 +3,7 @@
 
 all: target test
 
+package: target
 target:
 	( mvn package )
 

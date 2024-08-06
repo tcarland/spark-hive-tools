@@ -160,8 +160,8 @@ object HiveTableMeta {
 
     val pat1    = """(CREATE .*)( TBLPROPERTIES .*)""".r
     val pat2    = """(CREATE .*TABLE.* )(LOCATION\s+'.+')(.*)""".r
-    val pat3    = """LOCATION 'hdfs://\S+?/(\S+)'""".r
-    val pat4    = """hdfs://(\S+)?/""".r
+    val pat3    = """LOCATION '\S+://\S+?/(\S+)'""".r
+    val pat4    = """\S+://(\S+)?/""".r
 
     if ( inFile.isEmpty || outFile.isEmpty || hdfsnn.isEmpty ) {
       System.err.println(" ==> Error, invalid or missing options")
